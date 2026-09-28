@@ -1,0 +1,44 @@
+# ===== Visual Studio =====
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# ===== Build results =====
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# ===== NuGet (packages.config restore) =====
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nupkg
+*.snupkg
+*.nuget.props
+*.nuget.targets
+
+# ===== Test / coverage =====
+[Tt]est[Rr]esult*/
+*.coverage
+*.coveragexml
+coverage*.json
+coverage*.xml
+
+# ===== Publish / packaging =====
+[Pp]ublish/
+*.pubxml
+*.publishproj
+*.azurePubxml
+msbuild.binlog
+
+# ===== Rider / editors =====
+.idea/
+*.DotSettings.user
+
+# ===== OS junk =====
+Thumbs.db
+desktop.ini
+.DS_Store

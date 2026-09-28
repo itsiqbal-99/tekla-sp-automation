@@ -172,6 +172,11 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="src\Domain\Models\PartInfo.cs" />
+    <Compile Include="src\Infrastructure\Tekla\IPartReader.cs" />
+    <Compile Include="src\Infrastructure\Tekla\ITeklaModelSession.cs" />
+    <Compile Include="src\Infrastructure\Tekla\TeklaModelSession.cs" />
+    <Compile Include="src\Infrastructure\Tekla\TeklaPartReader.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
