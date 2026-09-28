@@ -6,13 +6,14 @@ using System.Threading.Tasks;
 
 namespace SinglePartAutoFix.Domain.Models
 {
-    public class PartInfo
+    public class DrawingCandidate
     {
-        public int Id { get; set; }
+        public int RepresentativePartId { get; set; }
         public string PieceMark { get; set; }
         public string Profile { get; set; }
         public string Material { get; set; }
+        public int PartCount { get; set; }
 
-        public bool isNumberingUpToDate { get; set; }
+
     }
 }

@@ -1,12 +1,19 @@
 ﻿using SinglePartAutoFix.Domain.Models;
+using SinglePartAutoFix.Application.Interfaces;
 using Tekla.Structures.Model;
 using System.Collections.Generic;
 using System;
 using System.Collections;
+using Tekla.Structures.Model.Operations;
+using SinglePartAutoFix.Application.Models;
+
+using TeklaModelObjectSelector = Tekla.Structures.Model.ModelObjectSelector;
+
+using TeklaUiModelObjectSelector = Tekla.Structures.Model.UI.ModelObjectSelector;
 
 namespace SinglePartAutoFix.Infrastructure.Tekla
 {
-    public class TeklaPartReader
+    public class TeklaPartReader : IPartReader
     {
         private readonly TeklaModelSession _tekla;
 
@@ -15,48 +22,87 @@ namespace SinglePartAutoFix.Infrastructure.Tekla
             _tekla = tekla;
         }
 
-        public IReadOnlyList<PartInfo> GetParts()
+        public IReadOnlyList<PartInfo> GetParts(PartQuery query)
         {
+            if (query == null)
+            {
+                throw new ArgumentNullException(nameof(query));
+            }
             var result = new List<PartInfo>();
 
-            if(!_tekla.IsConnected())
+            if (!_tekla.IsConnected())
             {
                 Console.WriteLine("ERROR DI READONLY");
                 return result;
             }
 
 
-            var selector = _tekla.GetModel().GetModelObjectSelector();
-            var objects = selector.GetAllObjectsWithType(new[] {typeof(Part)});
+            ModelObjectEnumerator objects;
 
-            while(objects.MoveNext())
+            switch (query.SelectionMode)
             {
-                if (objects.Current is Part part)
-                {
-                    var names = new ArrayList { "PART_POS" };
-                    var values = new Hashtable();
+                case PartSelectionMode.Selected:
 
-                    part.GetStringReportProperties(names, ref values);
-                    string pieceMark = "";
-                    if (values.ContainsKey("PART_POS"))
-                    {
-                        pieceMark = values["PART_POS"]?.ToString() ?? "";
-                    }
+                    var uiSelector = new TeklaUiModelObjectSelector();
 
-                    result.Add(new PartInfo
-                    {
-                        Id = part.Identifier.ID,
-                        PieceMark = pieceMark,
-                        Profile = part.Profile.ProfileString,
-                        Material = part.Material.MaterialString
-                    });
+                    objects = uiSelector.GetSelectedObjects();
 
-                    if (result.Count % 100 == 0)
-                    {
-                        Console.WriteLine( $"Read {result.Count} parts...");
-                    }
-                }
+                    break;
+
+                case PartSelectionMode.All:
+
+                    var modelSelector = _tekla.GetModel().GetModelObjectSelector();
+
+                    objects = modelSelector.GetAllObjectsWithType(
+                            new[] { typeof(Part) }
+                        );
+
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
+
+            while (objects.MoveNext())
+            {
+                if (!(objects.Current is Part part))
+                    continue;
+
+                var names = new ArrayList
+                {
+                    "PART_POS"
+                };
+
+                var values = new Hashtable();
+
+                Console.WriteLine("\nPART " + part);
+
+                part.GetStringReportProperties(
+                    names,
+                    ref values
+                );
+
+                string pieceMark = "";
+
+                if (values.ContainsKey("PART_POS"))
+                {
+                    pieceMark =
+                        values["PART_POS"]?.ToString() ?? "";
+                }
+
+                bool numberingUpToDate =
+                    Operation.IsNumberingUpToDate(part);
+
+                result.Add(new PartInfo
+                {
+                    Id = part.Identifier.ID,
+                    PieceMark = pieceMark,
+                    Profile = part.Profile.ProfileString,
+                    Material = part.Material.MaterialString,
+                    isNumberingUpToDate = numberingUpToDate
+                });
+            }
+
             return result;
         }
     }

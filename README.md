@@ -8,9 +8,13 @@ The application does **not** replace Tekla Structures, its model, or its drawing
 
 ### Current development environment
 
-- **Tekla Structures:** 2026
-- **Tekla Open API:** 2026
+- **Production target:** Tekla Structures 2022
+- **Production API baseline:** Tekla Open API 2022
+- **Current development runtime:** Tekla Structures 2026
+- **Current development references:** Tekla Open API 2026 assemblies from the local Tekla 2026 installation
+- **Compatibility rule:** new Tekla-specific logic must use API functionality available in Tekla Open API 2022 unless explicitly approved otherwise
 - **Language:** C#
+- **Framework:** .NET Framework 4.8.1
 - **Desktop UI target:** WPF
 - **Target platform:** Windows x64
 - **Current POC type:** Console application
@@ -364,42 +368,85 @@ Only after the core workflow is stable:
 
 ## 12. Important Technical Constraint
 
-The production environment may use a different Tekla Structures version from the current development environment.
+The company production environment uses **Tekla Structures 2022**.
 
-The current development baseline is **Tekla Structures 2026**.
+The current development machine uses **Tekla Structures 2026**, because Tekla 2022 is not currently available in the development environment.
 
-When the production Tekla version is confirmed, the application must be tested against the actual production version and its matching Open API assemblies before deployment.
+To reduce future refactoring:
 
-Do not assume that a newer Tekla Open API assembly is automatically compatible with an older production installation.
+- Tekla Open API **2022 is the compatibility baseline** for all new Tekla-specific logic.
+- The development project may continue to reference Tekla 2026 assemblies so that it can connect to the installed Tekla 2026 runtime.
+- Do not introduce a Tekla API call that was added after 2022 unless there is a confirmed requirement and a version-specific implementation plan.
+- Keep Tekla-specific logic isolated under `Infrastructure/Tekla`.
+- Before production deployment, build and test the application against the actual Tekla 2022 environment and matching Tekla Open API 2022 assemblies.
+- Do not assume a newer Tekla Open API assembly will run against an older Tekla installation.
+- Do not mix Tekla assemblies from different installations / versions in the same build.
 
 ---
 
 ## 13. Current Known Baseline
 
-The current project successfully proves:
+The current project has successfully proven the following POC flow:
 
 ```text
 C# Console Application
         |
         v
-Tekla Open API 2026
+Tekla Structures 2026 development runtime
         |
         v
-Tekla Structures 2026
+Connect to active Tekla model
         |
         v
-Active Sample Office Building model
+Read selected physical Parts
         |
         v
-Connection successful
+Read ID / PART_POS / Profile / Material
         |
         v
-Model name/path successfully read
+Check numbering status per Part
+        |
+        v
+Group selected Parts by PART_POS
+        |
+        v
+Create one DrawingCandidate per unique PART_POS
+        |
+        v
+Connect to Tekla Drawing API
+        |
+        v
+Read existing SinglePartDrawing records
+        |
+        v
+Map Drawing.PartIdentifier back to Model.Part
+        |
+        v
+Read PART_POS of the existing drawing
+        |
+        v
+Classify candidate as EXISTING or READY TO CREATE
 ```
 
-The verified model used during the connection test is:
+Verified capabilities:
+
+- Tekla model connection works.
+- Active model name and path can be read.
+- `Selected` and `All` part-reading modes are supported.
+- Selection from the Tekla UI can be read using `Tekla.Structures.Model.UI.ModelObjectSelector`.
+- Part metadata currently includes model object ID, `PART_POS`, profile, material / grade, and per-part numbering status.
+- Numbering readiness is checked per model Part rather than using the whole-model status as the only gate.
+- Multiple physical parts with the same `PART_POS` are grouped into one drawing candidate.
+- `DrawingHandler` connection works.
+- Existing `SinglePartDrawing` records can be read.
+- Existing drawings are matched by `PART_POS`, not only by representative physical Part ID.
+- The existing-drawing result has been validated with a real `EXISTING` case (`CP/100`).
+
+The verified development model is:
 
 `Sample Office Building (metric).db1`
+
+Drawing creation (`SinglePartDrawing.Insert()`) has **not yet been implemented or validated**. The next POC must create only one controlled drawing before any batch generation is attempted.
 
 ---
 
@@ -436,11 +483,15 @@ Prefer the simplest design that supports:
 
 ### Tekla API safety
 
-- Use the matching Tekla Open API version for the target environment.
-- Do not mix Tekla assemblies from different versions.
+- Treat Tekla Open API 2022 as the production compatibility baseline.
+- The current development runtime is Tekla 2026, so development references may remain on the working Tekla 2026 installation until production validation.
+- Do not use an API introduced after 2022 unless explicitly approved.
+- Do not mix Tekla assemblies from different versions or installations.
 - Keep Tekla-specific code isolated.
-- Do not assume an API method exists in another Tekla version without verification.
-- Do not change working dependencies without a clear reason.
+- Do not assume an API method exists in Tekla 2022 without verification.
+- Do not change the current working Tekla references / dependencies without a clear reason.
+- Be careful with class-name collisions such as `Tekla.Structures.Model.Part` versus `Tekla.Structures.Drawing.Part`.
+- Existing drawing matching must be based on engineering identity (`PART_POS`) rather than assuming the current representative model Part ID is the same Part ID used by an existing drawing.
 
 ### Batch processing safety
 
@@ -468,31 +519,62 @@ The core workflow should remain usable whether the command originates from:
 
 The immediate development target is:
 
-> **POC: read parts from the active Tekla 2026 model and display a clean summary of the available part information.**
+> **POC: create exactly one new Single Part Drawing from one `READY TO CREATE` DrawingCandidate and verify it manually in Tekla.**
 
-Expected next step:
+Current preconditions already proven:
 
 ```text
-Tekla connection
+Selected Parts
       |
       v
-Model object selector
+Per-Part Numbering Check
       |
       v
-Read Part objects
+Group by PART_POS
       |
       v
-Extract:
-- ID
-- Piece Mark
-- Profile
-- Material / Grade
+DrawingCandidate
       |
       v
-Display count + sample records
+Existing Drawing Check
+      |
+      v
+EXISTING / READY TO CREATE
 ```
 
-After this works reliably, the project will move to the first single-part drawing creation test.
+Next controlled step:
+
+```text
+Choose ONE READY TO CREATE candidate
+      |
+      v
+Resolve its RepresentativePartId
+      |
+      v
+Create SinglePartDrawing
+      |
+      v
+Insert
+      |
+      v
+Verify in Tekla Document Manager
+      |
+      v
+Run existing check again
+      |
+      v
+Candidate should become EXISTING
+```
+
+Do **not** implement batch creation until the one-drawing POC has been verified.
+
+After the single-drawing creation POC is stable, the next concerns are:
+
+- approved drawing attribute / settings selection,
+- failure handling,
+- batch generation,
+- result reporting,
+- Engineering review workflow.
 
 ---
 
