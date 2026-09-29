@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\Tekla.Common.Geometry.4.7.0\build\Tekla.Common.Geometry.props" Condition="Exists('..\packages\Tekla.Common.Geometry.4.7.0\build\Tekla.Common.Geometry.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -187,6 +187,7 @@
     <Compile Include="src\Domain\Models\DrawingCandidate.cs" />
     <Compile Include="src\Domain\Models\PartInfo.cs" />
     <Compile Include="src\Application\Interfaces\IPartReader.cs" />
+    <Compile Include="src\Infrastructure\Logging\SimpleFileLogger.cs" />
     <Compile Include="src\Infrastructure\Tekla\ITeklaModelSession.cs" />
     <Compile Include="src\Infrastructure\Tekla\TeklaDrawingChecker.cs" />
     <Compile Include="src\Infrastructure\Tekla\TeklaDrawingCreator.cs" />

@@ -89,6 +89,9 @@ namespace SinglePartAutoFix.Infrastructure.Tekla
                         values["PART_POS"]?.ToString() ?? "";
                 }
 
+                string materialType = "";
+                part.GetReportProperty("MATERIAL_TYPE", ref materialType);
+
                 bool numberingUpToDate =
                     Operation.IsNumberingUpToDate(part);
 
@@ -98,6 +101,7 @@ namespace SinglePartAutoFix.Infrastructure.Tekla
                     PieceMark = pieceMark,
                     Profile = part.Profile.ProfileString,
                     Material = part.Material.MaterialString,
+                    MaterialType = materialType,
                     isNumberingUpToDate = numberingUpToDate,
                 });
             }

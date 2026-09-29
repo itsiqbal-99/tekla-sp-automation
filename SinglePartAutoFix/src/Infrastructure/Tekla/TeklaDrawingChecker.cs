@@ -1,6 +1,8 @@
 ﻿using SinglePartAutoFix.Domain.Models;
 using SinglePartAutoFix.src.Application.Interfaces;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using Tekla.Structures.Drawing;
 
 using ModelPart = Tekla.Structures.Model.Part;
@@ -10,6 +12,7 @@ namespace SinglePartAutoFix.Infrastructure.Tekla
     public class TeklaDrawingChecker: IDrawingChecker
     {
         private readonly TeklaModelSession _tekla;
+        private HashSet<string> _existingPiecemarks;
 
         public TeklaDrawingChecker(TeklaModelSession tekla)
         {
@@ -21,13 +24,27 @@ namespace SinglePartAutoFix.Infrastructure.Tekla
             if (candidate == null)
                 throw new ArgumentNullException(nameof(candidate));
 
+            if(_existingPiecemarks == null)
+            {
+                LoadExistingPiecemark();
+            }
+
+            return _existingPiecemarks.Contains(candidate.PieceMark);
+
+         }
+
+        private void LoadExistingPiecemark()
+        {
+            _existingPiecemarks = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
             var drawingHandler = new DrawingHandler();
             if(!drawingHandler.GetConnectionStatus())
             {
-                return false;
+                throw new InvalidOperationException(
+                    "Drawing API is not connected");
             }
-            var drawings = drawingHandler.GetDrawings();
 
+            var drawings = drawingHandler.GetDrawings();
             while (drawings.MoveNext())
             {
                 if (!(drawings.Current is SinglePartDrawing drawing))
@@ -39,24 +56,14 @@ namespace SinglePartAutoFix.Infrastructure.Tekla
                     continue;
 
                 string pieceMark = "";
+                part.GetReportProperty("PART_POS", ref pieceMark);
 
-                part.GetReportProperty(
-                    "PART_POS",
-                    ref pieceMark
-                );
-
-                if (string.Equals(
-                    pieceMark,
-                    candidate.PieceMark,
-                    StringComparison.OrdinalIgnoreCase))
+                if(!string.IsNullOrEmpty(pieceMark))
                 {
-                    return true;
+                    _existingPiecemarks.Add(pieceMark);
                 }
-
             }
-
-            return false;
-         }
+        }
 
         public void PrintSinglePartDrawings()
         {
@@ -96,6 +103,19 @@ namespace SinglePartAutoFix.Infrastructure.Tekla
 
             Console.WriteLine();
             Console.WriteLine($"Total Single Part Drawbgs: {count}");
+        }
+
+        public void MarkAsExisting(string pieceMark)
+        {
+            if (string.IsNullOrWhiteSpace(pieceMark))
+                return;
+
+            if(_existingPiecemarks == null)
+            {
+                LoadExistingPiecemark();
+            }
+
+            _existingPiecemarks.Add(pieceMark);
         }
     }
 

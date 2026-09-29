@@ -1,11 +1,13 @@
 ﻿using SinglePartAutoFix.Application.Models;
 using SinglePartAutoFix.Application.Services;
 using SinglePartAutoFix.Domain.Models;
+using SinglePartAutoFix.Infrastructure.Logging;
 using SinglePartAutoFix.Infrastructure.Tekla;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.NetworkInformation;
+using Tekla.Structures.Drawing;
 
 class Program
 {
@@ -53,8 +55,14 @@ class Program
                 drawingCreator
             );
 
-            RunDryRun(drawingProcessor, drawingCandidates);
-            RunSingleCreateTest(drawingProcessor, drawingCandidates, "BP/275");
+            var logger = new SimpleFileLogger();
+
+            var dryRunResult = RunDryRun(drawingProcessor, drawingCandidates);
+            logger.Write("DRY RUN", dryRunResult);
+
+            var batchResults = RunControllerBatch(drawingProcessor, dryRunResult, MaxItems: 3);
+            logger.Write("CONTROLLED BATCH", batchResults);
+            //RunSingleCreateTest(drawingProcessor, drawingCandidates, "BP/275");
         }
         catch (Exception ex)
         {
@@ -84,6 +92,7 @@ class Program
                     PieceMark = representative.PieceMark,
                     Profile = representative.Profile,
                     Material = representative.Material,
+                    MaterialType = representative.MaterialType,
                     PartCount = group.Count(),
                     IsNumberingUpToDate = group.All(part => part.isNumberingUpToDate)
                 };
@@ -91,7 +100,7 @@ class Program
             .ToList();
     }
 
-    private static void RunDryRun(
+    private static List<DrawingProcessResult> RunDryRun(
         DrawingProcessor drawingProcessor,
         IReadOnlyList<DrawingCandidate> drawingCandidates)
     {
@@ -99,18 +108,18 @@ class Program
         Console.WriteLine("=== DRAWING PROCESSOR DRY RUN ===");
 
         var results = drawingCandidates.Select(candidate =>
-        drawingProcessor.Process(candidate, dryRun: true)).ToList();
-
-        foreach (var candidate in drawingCandidates)
         {
-            var result = drawingProcessor.Process(
-                candidate,
-                dryRun: true
-            );
+            return drawingProcessor.Process(candidate, dryRun: true);
+        }).ToList();
+
+        foreach (var result in results)
+        {
+            var candidate = result.Candidate;
 
             Console.WriteLine(
                 $"{candidate.PieceMark} | " +
                 $"{candidate.Profile} | " +
+                $"{candidate.MaterialType} | " +
                 $"Qty: {candidate.PartCount} | " +
                 $"{result.Status} | " +
                 $"{result.Message}"
@@ -124,6 +133,7 @@ class Program
         Console.WriteLine($"Need Review {results.Count(x => x.Status == DrawingProcessStatus.NeedReview)}");
         Console.WriteLine($"Created {results.Count(x => x.Status == DrawingProcessStatus.Created)}");
         Console.WriteLine($"Failed {results.Count(x => x.Status == DrawingProcessStatus.Failed)}");
+        return results;
     }
 
     public static void RunSingleCreateTest(DrawingProcessor drawingProcessor,
@@ -147,5 +157,85 @@ class Program
 
         var result = drawingProcessor.Process(candidate, dryRun: false);
         Console.WriteLine($"{result.Status} | {result.Message}");
+    }
+
+    private static List<DrawingProcessResult> RunControllerBatch(DrawingProcessor drawingProcessor, IReadOnlyList<DrawingProcessResult> dryRunResults, int MaxItems)
+    {
+        var candidatesToCreate = dryRunResults.Where(result =>
+        result.Status == DrawingProcessStatus.ReadyToCreate
+        ).Take(MaxItems)
+        .Select(result => result.Candidate)
+        .ToList();
+
+
+        Console.WriteLine();
+        Console.WriteLine("=== CONTROLLER BATCH ===");
+
+        if(candidatesToCreate.Count == 0)
+        {
+            Console.WriteLine("No Drawings ready to create.");
+            return new List<DrawingProcessResult>();
+        }
+
+
+        Console.WriteLine($"Drawings to Create: {candidatesToCreate.Count}");
+
+
+        foreach(var candidate in candidatesToCreate)
+        {
+            Console.WriteLine(
+                $"{candidate.PieceMark} |" +
+                $"{candidate.Profile} |" +
+                $"{candidate.MaterialType} |" +
+                $"{candidate.PartCount} |" 
+                );
+
+        }
+        Console.WriteLine();
+        Console.Write("Continue Creating these Drawings? (Y/N)");
+
+        var input = Console.ReadLine();
+        if (!string.Equals(input, "Y", StringComparison.OrdinalIgnoreCase)) {
+            Console.WriteLine("Batch Cancelled");
+            return new List<DrawingProcessResult>();
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("=== BATCH RESULT ===");
+
+        var batchResults = new List<DrawingProcessResult>();
+
+        foreach (var candidate in candidatesToCreate)
+        {
+            var result = drawingProcessor.Process(candidate, dryRun: false);
+            batchResults.Add(result);
+
+            Console.WriteLine(
+                $"{candidate.PieceMark} | " +
+                $"{result.Status} | " +
+                $"{result.Message}"
+                );
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("=== BATCH SUMMARY ===");
+        Console.WriteLine($"Processed   : {batchResults.Count}");
+        Console.WriteLine(
+            $"Created     : {batchResults.Count(x => x.Status == DrawingProcessStatus.Created)}"
+        );
+
+        Console.WriteLine(
+            $"Existing    : {batchResults.Count(x => x.Status == DrawingProcessStatus.Existing)}"
+        );
+
+        Console.WriteLine(
+            $"Need Review : {batchResults.Count(x => x.Status == DrawingProcessStatus.NeedReview)}"
+        );
+
+        Console.WriteLine(
+            $"Failed      : {batchResults.Count(x => x.Status == DrawingProcessStatus.Failed)}"
+        );
+
+        return batchResults;
     }
 }

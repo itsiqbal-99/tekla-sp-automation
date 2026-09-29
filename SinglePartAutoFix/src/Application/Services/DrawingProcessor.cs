@@ -3,10 +3,7 @@ using SinglePartAutoFix.Application.Models;
 using SinglePartAutoFix.Domain.Models;
 using SinglePartAutoFix.src.Application.Interfaces;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Runtime.Remoting.Messaging;
 
 namespace SinglePartAutoFix.Application.Services
 {
@@ -14,6 +11,7 @@ namespace SinglePartAutoFix.Application.Services
     {
         private readonly IDrawingChecker _drawingChecker;
         private readonly IDrawingCreator _drawingCreator;
+
 
         public DrawingProcessor(IDrawingChecker drawingChecked, IDrawingCreator drawingCreator)
         {
@@ -40,6 +38,16 @@ namespace SinglePartAutoFix.Application.Services
                     };
                 }
 
+                if(string.Equals(candidate.MaterialType, "CONCRETE", StringComparison.OrdinalIgnoreCase))
+                {
+                    return new DrawingProcessResult
+                    {
+                        Candidate = candidate,
+                        Status = DrawingProcessStatus.NeedReview,
+                        Message = "Concrete is not supported by the current single part drawing workflow"
+                    };
+                }
+
                 bool exists = _drawingChecker.Exists(candidate);
                 if (exists)
                 {
@@ -63,6 +71,7 @@ namespace SinglePartAutoFix.Application.Services
                 bool created = _drawingCreator.Create(candidate);
                 if (created)
                 {
+                    _drawingChecker.MarkAsExisting(candidate.PieceMark);
                     return new DrawingProcessResult
                     {
                         Candidate = candidate,
