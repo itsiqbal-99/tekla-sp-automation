@@ -13,6 +13,7 @@ namespace SinglePartAutoFix.Domain.Models
         public string Profile { get; set; }
         public string Material { get; set; }
         public int PartCount { get; set; }
+        public bool IsNumberingUpToDate { get; set; }
 
 
     }

@@ -1,15 +1,17 @@
 ﻿using SinglePartAutoFix.Application.Models;
+using SinglePartAutoFix.Application.Services;
 using SinglePartAutoFix.Domain.Models;
 using SinglePartAutoFix.Infrastructure.Tekla;
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using Tekla.Structures.Model.Operations;
+using System.Net.NetworkInformation;
 
 class Program
 {
     static void Main()
     {
-        Console.WriteLine("=== TEKLA 2026 PART READER TEST ===\n");
+        Console.WriteLine("=== SINGLE PART DRAWING AUTOMATION ===\n");
 
         try
         {
@@ -17,14 +19,14 @@ class Program
 
             if (!tekla.IsConnected())
             {
-                Console.WriteLine("FAILED: No connection.");
+                Console.WriteLine("FAILED: No Tekla model connection.");
                 return;
             }
 
             Console.WriteLine("CONNECTED!");
-            Console.WriteLine("Model: " + tekla.GetModelName());
+            Console.WriteLine($"Model: {tekla.GetModelName()}");
 
-            var reader = new TeklaPartReader(tekla);
+            var partReader = new TeklaPartReader(tekla);
 
             Console.WriteLine();
             Console.WriteLine("Select parts in Tekla.");
@@ -36,82 +38,114 @@ class Program
                 SelectionMode = PartSelectionMode.Selected
             };
 
-            var parts = reader.GetParts(query);
-
-            var drawingCandidates = parts.Where(x =>
-            x.isNumberingUpToDate && !string.IsNullOrWhiteSpace(x.PieceMark))
-                .GroupBy(x => x.PieceMark)
-                .Select(group =>
-                {
-                    var representative = group.First();
-
-                    return new DrawingCandidate
-                    {
-                        RepresentativePartId = representative.Id,
-                        PieceMark = representative.PieceMark,
-                        Profile = representative.Profile,
-                        Material = representative.Material,
-                        PartCount = group.Count()
-                    };
-                })
-                .ToList();
+            var parts = partReader.GetParts(query);
+            var drawingCandidates = BuildDrawingCandidates(parts);
 
             Console.WriteLine();
             Console.WriteLine($"Selected physical parts : {parts.Count}");
-
             Console.WriteLine($"Drawing candidates      : {drawingCandidates.Count}");
 
-            Console.WriteLine();
-            Console.WriteLine("Drawing candidates:");
-
-            foreach (var candidate in drawingCandidates)
-            {
-                Console.WriteLine(
-                    $"{candidate.PieceMark} | " +
-                    $"{candidate.Profile} | " +
-                    $"{candidate.Material} | " +
-                    $"Qty: {candidate.PartCount} | " +
-                    $"Representative ID: {candidate.RepresentativePartId}"
-                );
-            }
-
             var drawingChecker = new TeklaDrawingChecker(tekla);
-            Console.WriteLine();
-            Console.WriteLine(
-                "=== EXISTING SINGLE PART DRAWINGS ==="
+            var drawingCreator = new TeklaDrawingCreator(tekla);
+
+            var drawingProcessor = new DrawingProcessor(
+                drawingChecker,
+                drawingCreator
             );
 
-            drawingChecker.PrintSinglePartDrawings();
-
-            Console.WriteLine();
-            Console.WriteLine("=== DRAWING CANDIDATE STATUS ===");
-
-            foreach (var candidate in drawingCandidates)
-            {
-                bool exists =
-                    drawingChecker.Exists(candidate);
-
-                string status =
-                    exists
-                        ? "EXISTING"
-                        : "READY TO CREATE";
-
-                Console.WriteLine(
-                    $"{candidate.PieceMark} | " +
-                    $"{candidate.Profile} | " +
-                    $"{candidate.Material} | " +
-                    $"Qty: {candidate.PartCount} | " +
-                    $"{status}"
-                );
-            }
+            RunDryRun(drawingProcessor, drawingCandidates);
+            RunSingleCreateTest(drawingProcessor, drawingCandidates, "BP/275");
         }
         catch (Exception ex)
         {
-            Console.WriteLine("\nERROR:");
+            Console.WriteLine();
+            Console.WriteLine("ERROR:");
             Console.WriteLine(ex);
         }
 
-        Console.WriteLine("\nPress Enter to exit...");
+        Console.WriteLine();
+        Console.WriteLine("Press ENTER to exit...");
         Console.ReadLine();
+    }
+
+    private static List<DrawingCandidate> BuildDrawingCandidates(
+        IReadOnlyList<PartInfo> parts)
+    {
+        return parts
+            .Where(part => !string.IsNullOrWhiteSpace(part.PieceMark))
+            .GroupBy(part => part.PieceMark)
+            .Select(group =>
+            {
+                var representative = group.First();
+
+                return new DrawingCandidate
+                {
+                    RepresentativePartId = representative.Id,
+                    PieceMark = representative.PieceMark,
+                    Profile = representative.Profile,
+                    Material = representative.Material,
+                    PartCount = group.Count(),
+                    IsNumberingUpToDate = group.All(part => part.isNumberingUpToDate)
+                };
+            })
+            .ToList();
+    }
+
+    private static void RunDryRun(
+        DrawingProcessor drawingProcessor,
+        IReadOnlyList<DrawingCandidate> drawingCandidates)
+    {
+        Console.WriteLine();
+        Console.WriteLine("=== DRAWING PROCESSOR DRY RUN ===");
+
+        var results = drawingCandidates.Select(candidate =>
+        drawingProcessor.Process(candidate, dryRun: true)).ToList();
+
+        foreach (var candidate in drawingCandidates)
+        {
+            var result = drawingProcessor.Process(
+                candidate,
+                dryRun: true
+            );
+
+            Console.WriteLine(
+                $"{candidate.PieceMark} | " +
+                $"{candidate.Profile} | " +
+                $"Qty: {candidate.PartCount} | " +
+                $"{result.Status} | " +
+                $"{result.Message}"
+            );
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("=== SUMMARY ===");
+        Console.WriteLine($"Ready to Create {results.Count(x => x.Status == DrawingProcessStatus.ReadyToCreate)}");
+        Console.WriteLine($"Existing {results.Count(x => x.Status == DrawingProcessStatus.Existing)}");
+        Console.WriteLine($"Need Review {results.Count(x => x.Status == DrawingProcessStatus.NeedReview)}");
+        Console.WriteLine($"Created {results.Count(x => x.Status == DrawingProcessStatus.Created)}");
+        Console.WriteLine($"Failed {results.Count(x => x.Status == DrawingProcessStatus.Failed)}");
+    }
+
+    public static void RunSingleCreateTest(DrawingProcessor drawingProcessor,
+    IReadOnlyList<DrawingCandidate> drawingCandidates,
+    string pieceMark)
+    {
+        var candidate = drawingCandidates.FirstOrDefault(x => x.PieceMark == pieceMark);
+        Console.WriteLine();
+        Console.WriteLine("=== SINGLE DRAWING CREATE TEST ===");
+
+        if (candidate == null)
+        {
+            Console.WriteLine($"Candidate {pieceMark} not found.");
+            return;
+        }
+
+        Console.WriteLine($"Piece Mark: {candidate.PieceMark}");
+        Console.WriteLine($"Part ID: {candidate.RepresentativePartId}");
+        Console.WriteLine($"Profile: {candidate.Profile}");
+        Console.WriteLine($"Qty: {candidate.PartCount}");
+
+        var result = drawingProcessor.Process(candidate, dryRun: false);
+        Console.WriteLine($"{result.Status} | {result.Message}");
     }
 }

@@ -75,7 +75,6 @@ namespace SinglePartAutoFix.Infrastructure.Tekla
 
                 var values = new Hashtable();
 
-                Console.WriteLine("\nPART " + part);
 
                 part.GetStringReportProperties(
                     names,
@@ -99,7 +98,7 @@ namespace SinglePartAutoFix.Infrastructure.Tekla
                     PieceMark = pieceMark,
                     Profile = part.Profile.ProfileString,
                     Material = part.Material.MaterialString,
-                    isNumberingUpToDate = numberingUpToDate
+                    isNumberingUpToDate = numberingUpToDate,
                 });
             }
 
