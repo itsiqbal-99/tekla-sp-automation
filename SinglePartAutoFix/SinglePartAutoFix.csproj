@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\Tekla.Common.Geometry.4.7.0\build\Tekla.Common.Geometry.props" Condition="Exists('..\packages\Tekla.Common.Geometry.4.7.0\build\Tekla.Common.Geometry.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -158,6 +158,9 @@
     <Reference Include="Tekla.Structures.Datatype, Version=2026.0.0.0, Culture=neutral, PublicKeyToken=2f04dbe497b71114, processorArchitecture=AMD64">
       <HintPath>..\packages\Tekla.Structures.Datatype.2026.0.0\lib\netstandard2.0\Tekla.Structures.Datatype.dll</HintPath>
     </Reference>
+    <Reference Include="Tekla.Structures.Drawing">
+      <HintPath>..\..\..\..\Program Files\Tekla Structures\2026.0\bin\Tekla.Structures.Drawing.dll</HintPath>
+    </Reference>
     <Reference Include="Tekla.Structures.Model, Version=2026.0.0.0, Culture=neutral, PublicKeyToken=2f04dbe497b71114, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\Program Files\Tekla Structures\2026.0\bin\Tekla.Structures.Model.dll</HintPath>
@@ -172,11 +175,30 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="src\Application\Interfaces\IDrawingChecker.cs" />
+    <Compile Include="src\Application\Interfaces\IDrawingCreator.cs" />
+    <Compile Include="src\Application\Interfaces\IDrawingProcessor.cs" />
+    <Compile Include="src\Application\Interfaces\INumberingChecker.cs" />
+    <Compile Include="src\Application\Models\DrawingProcessResult.cs" />
+    <Compile Include="src\Application\Models\DrawingProcessStatus.cs" />
+    <Compile Include="src\Application\Models\PartQuery.cs" />
+    <Compile Include="src\Application\Models\PartSelectionMode.cs" />
+    <Compile Include="src\Application\Services\DrawingProcessor.cs" />
+    <Compile Include="src\Domain\Models\DrawingCandidate.cs" />
+    <Compile Include="src\Domain\Models\PartInfo.cs" />
+    <Compile Include="src\Application\Interfaces\IPartReader.cs" />
+    <Compile Include="src\Infrastructure\Logging\SimpleFileLogger.cs" />
+    <Compile Include="src\Infrastructure\Tekla\ITeklaModelSession.cs" />
+    <Compile Include="src\Infrastructure\Tekla\TeklaDrawingChecker.cs" />
+    <Compile Include="src\Infrastructure\Tekla\TeklaDrawingCreator.cs" />
+    <Compile Include="src\Infrastructure\Tekla\TeklaModelSession.cs" />
+    <Compile Include="src\Infrastructure\Tekla\TeklaPartReader.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
