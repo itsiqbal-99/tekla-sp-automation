@@ -65,46 +65,6 @@ namespace SinglePartAutoFix.Infrastructure.Tekla
             }
         }
 
-        public void PrintSinglePartDrawings()
-        {
-            var drawingHandler = new DrawingHandler();
-            if (!drawingHandler.GetConnectionStatus())
-            {
-                Console.WriteLine("Drawing API not Connected.");
-                return;
-            }
-
-            var drawings = drawingHandler.GetDrawings();
-
-            int count = 0;
-            while (drawings.MoveNext())
-            {
-                if (!(drawings.Current is SinglePartDrawing drawing))
-                    continue;
-
-                count++;
-
-                string pieceMark = "";
-                var modelObject = _tekla.GetModel().SelectModelObject(drawing.PartIdentifier);
-
-                if(modelObject is ModelPart part)
-                {
-                    part.GetReportProperty("PART_POS", ref pieceMark);
-                }
-
-                Console.WriteLine(
-                    $"Drawing #{count} | " +
-                    $"Name: {drawing.Name} | " +
-                    $"PART_POS: {pieceMark} | " +
-                    $"Part ID: {drawing.PartIdentifier.ID}"
-                );
-
-            }
-
-            Console.WriteLine();
-            Console.WriteLine($"Total Single Part Drawbgs: {count}");
-        }
-
         public void MarkAsExisting(string pieceMark)
         {
             if (string.IsNullOrWhiteSpace(pieceMark))

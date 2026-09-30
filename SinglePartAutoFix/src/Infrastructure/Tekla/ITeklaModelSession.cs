@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SinglePartAutoFix.Infrastructure.Tekla
 {
-    internal interface ITeklaModelSession
+    public interface ITeklaModelSession
     {
         bool IsConnected();
         string GetModelName();

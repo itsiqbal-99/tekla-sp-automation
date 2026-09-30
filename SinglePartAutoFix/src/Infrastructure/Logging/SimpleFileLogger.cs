@@ -1,4 +1,5 @@
 using SinglePartAutoFix.Application.Models;
+using SinglePartAutoFix.Application.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,7 +7,7 @@ using System.Linq;
 
 namespace SinglePartAutoFix.Infrastructure.Logging
 {
-    public class SimpleFileLogger
+    public class SimpleFileLogger : IProcessLogger
     {
         private readonly string _logDirectory;
 
@@ -53,6 +54,10 @@ namespace SinglePartAutoFix.Infrastructure.Logging
                         $"{result.Status} | " +
                         $"{result.Message}"
                     );
+                    if (!string.IsNullOrWhiteSpace(result.TechnicalDetails))
+                    {
+                        writer.WriteLine($"TECHNICAL: {result.TechnicalDetails}");
+                    }
                 }
 
                 writer.WriteLine();

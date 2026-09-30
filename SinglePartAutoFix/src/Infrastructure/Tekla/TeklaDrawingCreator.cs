@@ -24,15 +24,13 @@ namespace SinglePartAutoFix.Infrastructure.Tekla
 
             if(!_tekla.IsConnected())
             {
-                Console.WriteLine("Tekla Drawing API is not Connected");
-                return false;
+                throw new InvalidOperationException("No active Tekla model connection is available.");
             }
 
             var drawingHandler = new DrawingHandler();
             if(!drawingHandler.GetConnectionStatus())
             {
-                Console.WriteLine("Tekla Drawing API is not Connected");
-                return false;
+                throw new InvalidOperationException("Tekla Drawing API is not connected.");
             }
 
             var partIdentifier = new Identifier(candidate.RepresentativePartId);

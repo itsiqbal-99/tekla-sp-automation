@@ -37,8 +37,8 @@ Engineering remains responsible for final drawing review and release.
 
 - Tekla Structures: **2026**
 - Current working references: DLLs from the installed Tekla 2026 runtime
-- Current project type: Console POC
-- Future presentation target: WPF
+- Current project type: Shared Core with independent Console and experimental WPF hosts
+- Current presentation status: WPF POC authorized as a scope exception
 
 ### Mandatory compatibility rule
 
@@ -118,7 +118,7 @@ This pipeline is the current source of truth.
 - Controlled batch POC: **validated**
 - File logging / summaries: **validated**
 - Drawing Standardization: **waiting for Engineering input**
-- WPF: **not started by design**
+- WPF: **experimental POC authorized as a scope exception**
 - Tekla 2022 production validation: **pending**
 
 ---
@@ -298,7 +298,7 @@ Do not introduce repositories, mediator frameworks, event buses, databases, mess
 
 ## 11. Current Architecture Direction
 
-For the current POC, remain in one Visual Studio project with logical folders:
+The shared Core retains these logical folders:
 
 ```text
 Application
@@ -308,11 +308,11 @@ Infrastructure
   └── Logging
 ```
 
-Do not prematurely split into multiple projects.
+The authorized WPF exception permits separate `SinglePartAutoFix.Cli` and `SinglePartAutoFix.Wpf` host projects so both remain independently runnable. Do not add further architectural layers without a proven requirement.
 
 Keep Tekla-specific implementation under `Infrastructure/Tekla`.
 
-WPF must remain presentation only when introduced later.
+WPF must remain presentation only.
 
 ---
 
@@ -407,7 +407,7 @@ Do not implement standardization rules until Engineering provides:
 - backlog / progress updates,
 - Tekla 2022 compatibility preparation.
 
-Do not start WPF merely because Engineering input is pending.
+The authorized WPF POC may continue as presentation-only work while Engineering input is pending. Do not use it to invent or simulate Drawing Standardization.
 
 ---
 
@@ -422,7 +422,7 @@ Do not start WPF merely because Engineering input is pending.
 7. Do not invent Engineering standards.
 8. Preserve tested behavior.
 9. Keep Tekla-specific classes isolated from business / domain models.
-10. Do not jump directly to WPF, REST, database, broad uncontrolled batch expansion, or AI.
+10. Keep the authorized WPF POC narrow; do not jump to REST, database, broad uncontrolled batch expansion, or AI.
 11. Extend proven code rather than unnecessarily rewriting it.
 12. Read `README.md` and this file before proposing architecture changes.
 

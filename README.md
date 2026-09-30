@@ -19,15 +19,15 @@ The application does **not** replace Tekla Structures, its model, or its drawing
 - **Framework:** .NET Framework 4.8.1
 - **Desktop UI target:** WPF
 - **Target platform:** Windows x64
-- **Current POC type:** Console application
-- **Current project:** `SinglePartAutoFix`
+- **Current POC type:** Shared core with independent Console and experimental WPF hosts
+- **Current projects:** `SinglePartAutoFix.Core`, `SinglePartAutoFix.Cli`, and `SinglePartAutoFix.Wpf`
 
 ### Current development status
 
 > **Core processing POC: stable**  
 > **Controlled batch POC: validated**  
 > **Drawing Standardization POC: waiting for Engineering input**  
-> **WPF: not started by design**  
+> **WPF: experimental POC implemented by explicit scope exception**
 > **Tekla 2022 production validation: pending**
 
 ---
@@ -324,9 +324,9 @@ Required Engineering inputs:
 
 Do not invent these rules.
 
-### Phase 6 — WPF Application — **Not Started by Design**
+### Phase 6 — WPF Application — **Experimental POC**
 
-Build WPF only after the core workflow and at least one standardization family are proven.
+An explicit scope exception authorized a presentation-only WPF experiment before Drawing Standardization. The WPF host uses the same shared processing services as the CLI and does not implement standardization rules.
 
 ### Phase 7 — Tekla 2022 Validation & Engineering UAT — **Pending**
 
@@ -370,7 +370,9 @@ Rules:
 The current Console POC has successfully proven:
 
 ```text
-C# Console Application
+Console CLI       WPF POC
+       \             /
+Shared .NET Framework Core
         |
         v
 Tekla Structures 2026 Development Runtime
@@ -472,7 +474,7 @@ This is **not yet production-ready**. Pending items include:
 - approved company drawing settings,
 - confirmed standardization rules,
 - one proven standardization family,
-- WPF,
+- Tekla-backed WPF integration validation,
 - Tekla 2022 compatibility build / test,
 - Engineering UAT / pilot.
 
@@ -489,7 +491,7 @@ This is **not yet production-ready**. Pending items include:
 - Do not invent Engineering standards.
 - Do not move business rules into UI code.
 - Do not introduce unnecessary architecture.
-- Do not start WPF, REST, database, AI, or broad uncontrolled batch expansion before the current milestone requires it.
+- Keep the approved WPF experiment presentation-only; do not start REST, database, AI, or broad uncontrolled batch expansion before the current milestone requires it.
 - Extend proven code rather than rewriting it unnecessarily.
 
 ---
@@ -521,7 +523,7 @@ Required inputs:
 - backlog / progress updates,
 - Tekla 2022 compatibility preparation.
 
-Do not invent drawing-standardization rules or start WPF as a substitute for missing Engineering requirements.
+Do not invent drawing-standardization rules or expand the WPF experiment as a substitute for missing Engineering requirements.
 
 ---
 

@@ -92,7 +92,8 @@ namespace SinglePartAutoFix.Application.Services
                 {
                     Candidate = candidate,
                     Status = DrawingProcessStatus.Failed,
-                    Message = $"Processing FAILED: {ex.Message}"
+                    Message = $"Drawing creation failed for {candidate.PieceMark}.",
+                    TechnicalDetails = ex.ToString()
                 };
             }
                 

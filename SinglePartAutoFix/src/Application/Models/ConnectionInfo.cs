@@ -1,0 +1,9 @@
+namespace SinglePartAutoFix.Application.Models
+{
+    public sealed class ConnectionInfo
+    {
+        public bool IsConnected { get; set; }
+        public string ModelName { get; set; }
+        public string ModelPath { get; set; }
+    }
+}

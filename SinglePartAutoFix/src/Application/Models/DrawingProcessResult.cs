@@ -12,5 +12,6 @@ namespace SinglePartAutoFix.Application.Models
         public DrawingCandidate Candidate { get; set; }
         public DrawingProcessStatus Status { get; set; }
         public String Message { get; set; }
+        public String TechnicalDetails { get; set; }
     }
 }

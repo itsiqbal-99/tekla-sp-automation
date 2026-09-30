@@ -32,8 +32,7 @@ namespace SinglePartAutoFix.Infrastructure.Tekla
 
             if (!_tekla.IsConnected())
             {
-                Console.WriteLine("ERROR DI READONLY");
-                return result;
+                throw new InvalidOperationException("No active Tekla model connection is available.");
             }
 
 
