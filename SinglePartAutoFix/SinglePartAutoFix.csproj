@@ -178,12 +178,16 @@
     <Compile Include="src\Application\Interfaces\IDrawingChecker.cs" />
     <Compile Include="src\Application\Interfaces\IDrawingCreator.cs" />
     <Compile Include="src\Application\Interfaces\IDrawingProcessor.cs" />
+    <Compile Include="src\Application\Interfaces\IDrawingStandardizer.cs" />
     <Compile Include="src\Application\Interfaces\INumberingChecker.cs" />
     <Compile Include="src\Application\Models\DrawingProcessResult.cs" />
     <Compile Include="src\Application\Models\DrawingProcessStatus.cs" />
+    <Compile Include="src\Application\Models\DrawingStandardizationResult.cs" />
+    <Compile Include="src\Application\Models\DrawingStandardizationStatus.cs" />
     <Compile Include="src\Application\Models\PartQuery.cs" />
     <Compile Include="src\Application\Models\PartSelectionMode.cs" />
     <Compile Include="src\Application\Services\DrawingProcessor.cs" />
+    <Compile Include="src\Application\Services\NoOpDrawingStandardizer.cs" />
     <Compile Include="src\Domain\Models\DrawingCandidate.cs" />
     <Compile Include="src\Domain\Models\PartInfo.cs" />
     <Compile Include="src\Application\Interfaces\IPartReader.cs" />

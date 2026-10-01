@@ -3,7 +3,6 @@ using SinglePartAutoFix.Application.Models;
 using SinglePartAutoFix.Domain.Models;
 using SinglePartAutoFix.src.Application.Interfaces;
 using System;
-using System.Runtime.Remoting.Messaging;
 
 namespace SinglePartAutoFix.Application.Services
 {
@@ -11,12 +10,14 @@ namespace SinglePartAutoFix.Application.Services
     {
         private readonly IDrawingChecker _drawingChecker;
         private readonly IDrawingCreator _drawingCreator;
+        private readonly IDrawingStandardizer _drawingStandardizer;
 
 
-        public DrawingProcessor(IDrawingChecker drawingChecked, IDrawingCreator drawingCreator)
+        public DrawingProcessor(IDrawingChecker drawingChecked, IDrawingCreator drawingCreator, IDrawingStandardizer drawingStandardizer)
         {
             _drawingChecker = drawingChecked;
             _drawingCreator = drawingCreator;
+            _drawingStandardizer = drawingStandardizer;
         }
 
         public DrawingProcessResult Process(DrawingCandidate candidate, bool dryRun)
@@ -72,11 +73,15 @@ namespace SinglePartAutoFix.Application.Services
                 if (created)
                 {
                     _drawingChecker.MarkAsExisting(candidate.PieceMark);
+
+                    DrawingStandardizationResult standardizationResult = _drawingStandardizer.Apply(candidate);
+
                     return new DrawingProcessResult
                     {
                         Candidate = candidate,
                         Status = DrawingProcessStatus.Created,
-                        Message = "Drawing Created Successfully"
+                        Message = "Drawing Created Successfully",
+                        Standardization = standardizationResult
                     };
                 }
 
