@@ -42,7 +42,9 @@ class Program
             };
 
             var parts = partReader.GetParts(query);
-            var drawingCandidates = BuildDrawingCandidates(parts);
+            //var drawingCandidates = BuildDrawingCandidates(parts);
+            var candidateBuilder = new DrawingCandidateBuilder();
+            var drawingCandidates = candidateBuilder.Build(parts);
 
 
             Console.WriteLine();
@@ -86,31 +88,6 @@ class Program
         Console.WriteLine("Press ENTER to exit...");
         Console.ReadLine();
     }
-
-    private static List<DrawingCandidate> BuildDrawingCandidates(
-        IReadOnlyList<PartInfo> parts)
-    {
-        return parts
-            .Where(part => !string.IsNullOrWhiteSpace(part.PieceMark))
-            .GroupBy(part => part.PieceMark)
-            .Select(group =>
-            {
-                var representative = group.First();
-
-                return new DrawingCandidate
-                {
-                    RepresentativePartId = representative.Id,
-                    PieceMark = representative.PieceMark,
-                    Profile = representative.Profile,
-                    Material = representative.Material,
-                    MaterialType = representative.MaterialType,
-                    PartCount = group.Count(),
-                    IsNumberingUpToDate = group.All(part => part.isNumberingUpToDate)
-                };
-            })
-            .ToList();
-    }
-
     private static List<DrawingProcessResult> RunDryRun(
         DrawingProcessor drawingProcessor,
         IReadOnlyList<DrawingCandidate> drawingCandidates)

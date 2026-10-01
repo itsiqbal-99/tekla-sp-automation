@@ -186,6 +186,7 @@
     <Compile Include="src\Application\Models\DrawingStandardizationStatus.cs" />
     <Compile Include="src\Application\Models\PartQuery.cs" />
     <Compile Include="src\Application\Models\PartSelectionMode.cs" />
+    <Compile Include="src\Application\Services\DrawingCandidateBuilder.cs" />
     <Compile Include="src\Application\Services\DrawingProcessor.cs" />
     <Compile Include="src\Application\Services\NoOpDrawingStandardizer.cs" />
     <Compile Include="src\Domain\Models\DrawingCandidate.cs" />
