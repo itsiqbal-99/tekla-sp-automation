@@ -24,6 +24,9 @@ namespace SinglePartAutoFix.Wpf
         private List<DrawingCandidate> _drawingCandidates;
         private readonly DrawingProcessor _drawingProcessor;
         private List<DrawingProcessResult> _dryRunResults;
+
+        private readonly Dictionary<string, DrawingStandardizationResult> _standardizationResults = new Dictionary<string, DrawingStandardizationResult>(StringComparer.OrdinalIgnoreCase);
+
         public MainWindow()
         {
             InitializeComponent();
@@ -90,6 +93,7 @@ namespace SinglePartAutoFix.Wpf
                 }
 
                 _dryRunResults.Clear();
+                _standardizationResults.Clear();
 
                 ReadyCountText.Text = "-";
                 ExistingCountText.Text = "-";
@@ -285,6 +289,16 @@ namespace SinglePartAutoFix.Wpf
                                 dryRun: false))
                         .ToList();
 
+                    foreach (var result in creationResults)
+                    {
+                        if (result.Candidate == null || string.IsNullOrWhiteSpace(result.Candidate.PieceMark) || result.Standardization == null)
+                        {
+                            continue;
+                        }
+
+                        _standardizationResults[result.Candidate.PieceMark] = result.Standardization;
+                    }
+
                     RefreshDryRunResults();
                 }
                 finally
@@ -358,6 +372,23 @@ namespace SinglePartAutoFix.Wpf
                         candidate,
                         dryRun: true))
                 .ToList();
+
+            foreach (var result in _dryRunResults)
+            {
+                if (result.Candidate == null || string.IsNullOrWhiteSpace(result.Candidate.PieceMark))
+                {
+                    continue;
+                }
+
+                DrawingStandardizationResult standardizationResult;
+
+                if (_standardizationResults.TryGetValue(
+                    result.Candidate.PieceMark,
+                    out standardizationResult))
+                {
+                    result.Standardization = standardizationResult;
+                }
+            }
 
             int ready = _dryRunResults.Count(
                 x => x.Status == DrawingProcessStatus.ReadyToCreate);
