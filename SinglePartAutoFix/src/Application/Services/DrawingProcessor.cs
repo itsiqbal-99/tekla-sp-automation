@@ -13,9 +13,9 @@ namespace SinglePartAutoFix.Application.Services
         private readonly IDrawingStandardizer _drawingStandardizer;
 
 
-        public DrawingProcessor(IDrawingChecker drawingChecked, IDrawingCreator drawingCreator, IDrawingStandardizer drawingStandardizer)
+        public DrawingProcessor(IDrawingChecker drawingChecker, IDrawingCreator drawingCreator, IDrawingStandardizer drawingStandardizer)
         {
-            _drawingChecker = drawingChecked;
+            _drawingChecker = drawingChecker;
             _drawingCreator = drawingCreator;
             _drawingStandardizer = drawingStandardizer;
         }

@@ -1,187 +1,1204 @@
-﻿<Window x:Class="SinglePartAutoFix.Wpf.MainWindow"
+<Window x:Class="SinglePartAutoFix.Wpf.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Single Part Drawing Automation"
-        Height="720"
-        Width="1180"
-        MinHeight="650"
-        MinWidth="1000"
+        Width="1220"
+        Height="760"
+        MinWidth="1050"
+        MinHeight="680"
         WindowStartupLocation="CenterScreen"
-        Background="#F7F8FA">
+        Background="#F7F8FA"
+        FontFamily="Segoe UI">
+
+
+    <!-- =========================================================
+         RESOURCES
+         ========================================================= -->
+
+    <Window.Resources>
+
+
+        <!-- =====================================================
+             PRIMARY BUTTON
+             ===================================================== -->
+
+        <Style x:Key="PrimaryButtonStyle"
+               TargetType="Button">
+
+            <Setter Property="Background"
+                    Value="#111827"/>
+
+            <Setter Property="Foreground"
+                    Value="White"/>
+
+            <Setter Property="BorderThickness"
+                    Value="0"/>
+
+            <Setter Property="Padding"
+                    Value="18,0"/>
+
+            <Setter Property="FontSize"
+                    Value="13"/>
+
+            <Setter Property="FontWeight"
+                    Value="SemiBold"/>
+
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+
+            <Setter Property="FocusVisualStyle"
+                    Value="{x:Null}"/>
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="Button">
+
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6">
+
+                            <ContentPresenter
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"/>
+
+                        </Border>
+
+
+                        <ControlTemplate.Triggers>
+
+
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+
+                                <Setter TargetName="ButtonBorder"
+                                        Property="Background"
+                                        Value="#1F2937"/>
+
+                            </Trigger>
+
+
+                            <Trigger Property="IsPressed"
+                                     Value="True">
+
+                                <Setter TargetName="ButtonBorder"
+                                        Property="Background"
+                                        Value="#374151"/>
+
+                            </Trigger>
+
+
+                            <Trigger Property="IsEnabled"
+                                     Value="False">
+
+                                <Setter TargetName="ButtonBorder"
+                                        Property="Background"
+                                        Value="#E5E7EB"/>
+
+                                <Setter Property="Foreground"
+                                        Value="#9CA3AF"/>
+
+                                <Setter Property="Cursor"
+                                        Value="Arrow"/>
+
+                            </Trigger>
+
+
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
+        </Style>
+
+
+
+        <!-- =====================================================
+             SECONDARY BUTTON
+             ===================================================== -->
+
+        <Style x:Key="SecondaryButtonStyle"
+               TargetType="Button">
+
+            <Setter Property="Background"
+                    Value="White"/>
+
+            <Setter Property="Foreground"
+                    Value="#374151"/>
+
+            <Setter Property="BorderBrush"
+                    Value="#D1D5DB"/>
+
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+
+            <Setter Property="Padding"
+                    Value="18,0"/>
+
+            <Setter Property="FontSize"
+                    Value="13"/>
+
+            <Setter Property="FontWeight"
+                    Value="SemiBold"/>
+
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+
+            <Setter Property="FocusVisualStyle"
+                    Value="{x:Null}"/>
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="Button">
+
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+
+                            <ContentPresenter
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"/>
+
+                        </Border>
+
+
+                        <ControlTemplate.Triggers>
+
+
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+
+                                <Setter TargetName="ButtonBorder"
+                                        Property="Background"
+                                        Value="#F9FAFB"/>
+
+                                <Setter TargetName="ButtonBorder"
+                                        Property="BorderBrush"
+                                        Value="#9CA3AF"/>
+
+                            </Trigger>
+
+
+                            <Trigger Property="IsPressed"
+                                     Value="True">
+
+                                <Setter TargetName="ButtonBorder"
+                                        Property="Background"
+                                        Value="#F3F4F6"/>
+
+                            </Trigger>
+
+
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
+        </Style>
+
+
+
+        <!-- =====================================================
+             COMBOBOX
+             ===================================================== -->
+
+        <Style TargetType="ComboBox">
+
+            <Setter Property="Height"
+                    Value="36"/>
+
+            <Setter Property="Background"
+                    Value="White"/>
+
+            <Setter Property="Foreground"
+                    Value="#374151"/>
+
+            <Setter Property="BorderBrush"
+                    Value="#D1D5DB"/>
+
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+
+            <Setter Property="FontSize"
+                    Value="12"/>
+
+            <Setter Property="Padding"
+                    Value="8,0"/>
+
+            <Setter Property="VerticalContentAlignment"
+                    Value="Center"/>
+
+        </Style>
+
+
+
+        <!-- =====================================================
+             INVISIBLE COLUMN RESIZE GRIPPER
+
+             Important:
+             still supports resize but produces no visible bars/buttons.
+             ===================================================== -->
+
+        <Style x:Key="ColumnHeaderGripperStyle"
+               TargetType="{x:Type Thumb}">
+
+            <Setter Property="Width"
+                    Value="6"/>
+
+            <Setter Property="Background"
+                    Value="Transparent"/>
+
+            <Setter Property="Cursor"
+                    Value="SizeWE"/>
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="{x:Type Thumb}">
+
+                        <Border Background="Transparent"/>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
+        </Style>
+
+
+
+        <!-- =====================================================
+             DATAGRID COLUMN HEADER
+
+             Simple natural sort indicator:
+             PIECE MARK ↑
+             PIECE MARK ↓
+             ===================================================== -->
+
+        <Style TargetType="{x:Type DataGridColumnHeader}">
+
+            <Setter Property="Height"
+                    Value="42"/>
+
+            <Setter Property="Background"
+                    Value="#F8FAFC"/>
+
+            <Setter Property="Foreground"
+                    Value="#64748B"/>
+
+            <Setter Property="FontSize"
+                    Value="11"/>
+
+            <Setter Property="FontWeight"
+                    Value="SemiBold"/>
+
+            <Setter Property="Padding"
+                    Value="12,0"/>
+
+            <Setter Property="BorderBrush"
+                    Value="#E5E7EB"/>
+
+            <Setter Property="BorderThickness"
+                    Value="0,0,0,1"/>
+
+            <Setter Property="HorizontalContentAlignment"
+                    Value="Stretch"/>
+
+            <Setter Property="VerticalContentAlignment"
+                    Value="Center"/>
+
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="{x:Type DataGridColumnHeader}">
+
+
+                        <Grid>
+
+
+                            <!-- HEADER BACKGROUND -->
+
+                            <Border x:Name="HeaderBackground"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}">
+
+
+                                <Grid Margin="{TemplateBinding Padding}">
+
+
+                                    <Grid.ColumnDefinitions>
+
+                                        <ColumnDefinition Width="Auto"/>
+
+                                        <ColumnDefinition Width="Auto"/>
+
+                                        <ColumnDefinition Width="*"/>
+
+                                    </Grid.ColumnDefinitions>
+
+
+                                    <!-- HEADER LABEL -->
+
+                                    <ContentPresenter
+                                        Grid.Column="0"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Center"
+                                        RecognizesAccessKey="True"/>
+
+
+
+                                    <!-- NATURAL SORT INDICATOR -->
+
+                                    <TextBlock x:Name="SortIndicator"
+                                               Grid.Column="1"
+                                               Margin="6,0,0,1"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="#2563EB"
+                                               VerticalAlignment="Center"
+                                               Visibility="Collapsed"/>
+
+
+                                </Grid>
+
+
+                            </Border>
+
+
+
+                            <!--
+                                Required WPF header resize controls.
+
+                                These are intentionally transparent.
+                                No visible solid blocks.
+                            -->
+
+                            <Thumb x:Name="PART_LeftHeaderGripper"
+                                   HorizontalAlignment="Left"
+                                   Style="{StaticResource ColumnHeaderGripperStyle}"/>
+
+
+                            <Thumb x:Name="PART_RightHeaderGripper"
+                                   HorizontalAlignment="Right"
+                                   Style="{StaticResource ColumnHeaderGripperStyle}"/>
+
+
+                        </Grid>
+
+
+
+                        <ControlTemplate.Triggers>
+
+
+                            <!-- HEADER HOVER -->
+
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+
+                                <Setter TargetName="HeaderBackground"
+                                        Property="Background"
+                                        Value="#F3F4F6"/>
+
+                                <Setter Property="Foreground"
+                                        Value="#374151"/>
+
+                            </Trigger>
+
+
+
+                            <!-- ASCENDING -->
+
+                            <Trigger Property="SortDirection"
+                                     Value="Ascending">
+
+                                <Setter TargetName="SortIndicator"
+                                        Property="Text"
+                                        Value="↑"/>
+
+                                <Setter TargetName="SortIndicator"
+                                        Property="Visibility"
+                                        Value="Visible"/>
+
+                                <Setter Property="Foreground"
+                                        Value="#111827"/>
+
+                            </Trigger>
+
+
+
+                            <!-- DESCENDING -->
+
+                            <Trigger Property="SortDirection"
+                                     Value="Descending">
+
+                                <Setter TargetName="SortIndicator"
+                                        Property="Text"
+                                        Value="↓"/>
+
+                                <Setter TargetName="SortIndicator"
+                                        Property="Visibility"
+                                        Value="Visible"/>
+
+                                <Setter Property="Foreground"
+                                        Value="#111827"/>
+
+                            </Trigger>
+
+
+                        </ControlTemplate.Triggers>
+
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
+        </Style>
+
+
+
+        <!-- =====================================================
+             DATAGRID CELL
+             ===================================================== -->
+
+        <Style TargetType="{x:Type DataGridCell}">
+
+            <Setter Property="Padding"
+                    Value="12,8"/>
+
+            <Setter Property="BorderThickness"
+                    Value="0"/>
+
+            <Setter Property="Background"
+                    Value="Transparent"/>
+
+            <Setter Property="Foreground"
+                    Value="#374151"/>
+
+            <Setter Property="FontSize"
+                    Value="12"/>
+
+            <Setter Property="VerticalContentAlignment"
+                    Value="Center"/>
+
+            <Setter Property="FocusVisualStyle"
+                    Value="{x:Null}"/>
+
+
+            <Style.Triggers>
+
+
+                <Trigger Property="IsSelected"
+                         Value="True">
+
+                    <Setter Property="Background"
+                            Value="Transparent"/>
+
+                    <Setter Property="Foreground"
+                            Value="#111827"/>
+
+                </Trigger>
+
+
+            </Style.Triggers>
+
+        </Style>
+
+
+
+        <!-- =====================================================
+             DATAGRID ROW
+             ===================================================== -->
+
+        <Style TargetType="{x:Type DataGridRow}">
+
+            <Setter Property="MinHeight"
+                    Value="40"/>
+
+            <Setter Property="Background"
+                    Value="White"/>
+
+            <Setter Property="BorderBrush"
+                    Value="#F1F5F9"/>
+
+            <Setter Property="BorderThickness"
+                    Value="0,0,0,1"/>
+
+            <Setter Property="FocusVisualStyle"
+                    Value="{x:Null}"/>
+
+
+            <Style.Triggers>
+
+
+                <Trigger Property="IsMouseOver"
+                         Value="True">
+
+                    <Setter Property="Background"
+                            Value="#F9FAFB"/>
+
+                </Trigger>
+
+
+                <Trigger Property="IsSelected"
+                         Value="True">
+
+                    <Setter Property="Background"
+                            Value="#EFF6FF"/>
+
+                </Trigger>
+
+
+            </Style.Triggers>
+
+        </Style>
+
+
+    </Window.Resources>
+
+
+
+    <!-- =========================================================
+         ROOT
+         ========================================================= -->
 
     <Grid>
 
+
         <Grid.RowDefinitions>
+
             <RowDefinition Height="72"/>
+
             <RowDefinition Height="*"/>
+
         </Grid.RowDefinitions>
 
-        <!-- Header -->
+
+
+        <!-- =====================================================
+             APPLICATION HEADER
+             ===================================================== -->
 
         <Border Grid.Row="0"
                 Background="White"
                 BorderBrush="#E5E7EB"
                 BorderThickness="0,0,0,1">
 
+
             <Grid Margin="32,0">
 
+
                 <Grid.ColumnDefinitions>
+
                     <ColumnDefinition Width="*"/>
+
                     <ColumnDefinition Width="Auto"/>
+
                 </Grid.ColumnDefinitions>
 
+
+
+                <!-- TITLE -->
+
                 <StackPanel VerticalAlignment="Center">
+
 
                     <TextBlock Text="Single Part Drawing Automation"
                                FontSize="20"
                                FontWeight="SemiBold"
                                Foreground="#111827"/>
 
+
                     <TextBlock Text="Engineering Automation"
-                               Margin="0,4,0,0"
+                               Margin="0,3,0,0"
                                FontSize="12"
                                Foreground="#6B7280"/>
 
+
                 </StackPanel>
 
+
+
+                <!-- TEKLA STATUS -->
+
                 <Border Grid.Column="1"
-                        Background="#F3F4F6"
+                        Padding="11,7"
+                        Background="#F9FAFB"
+                        BorderBrush="#E5E7EB"
+                        BorderThickness="1"
                         CornerRadius="6"
-                        Padding="12,7"
                         VerticalAlignment="Center">
 
+
                     <StackPanel Orientation="Horizontal">
+
+
                         <Ellipse x:Name="TeklaStatusIndicator"
                                  Width="8"
                                  Height="8"
                                  Fill="#9CA3AF"
-                                 VerticalAlignment="Center" />
+                                 VerticalAlignment="Center"/>
+
+
                         <TextBlock x:Name="TeklaStatusText"
-                                   Text="Checking Tekla ..."
+                                   Text="Checking Tekla..."
                                    Margin="8,0,0,0"
                                    FontSize="12"
-                                   Foreground="#4B5563" />
+                                   Foreground="#4B5563"
+                                   VerticalAlignment="Center"/>
+
 
                     </StackPanel>
 
+
                 </Border>
+
 
             </Grid>
 
+
         </Border>
 
-        <!-- Content -->
+
+
+        <!-- =====================================================
+             CONTENT
+             ===================================================== -->
 
         <Grid Grid.Row="1"
-              Margin="32">
+              Margin="32,26,32,32">
 
-            <StackPanel>
+
+            <Grid.RowDefinitions>
+
+                <RowDefinition Height="Auto"/>
+
+                <RowDefinition Height="*"/>
+
+            </Grid.RowDefinitions>
+
+
+
+            <!-- =================================================
+                 PAGE TITLE
+                 ================================================= -->
+
+            <StackPanel Grid.Row="0">
+
 
                 <TextBlock Text="Drawings"
-                           FontSize="28"
+                           FontSize="27"
                            FontWeight="SemiBold"
                            Foreground="#111827"/>
 
-                <TextBlock Text="Prepare and generate single part drawings from Tekla Structures."
-                           Margin="0,8,0,0"
-                           FontSize="14"
-                           Foreground="#6B7280"/>
 
-                <Border Margin="0,32,0,0"
-        Background="White"
-        BorderBrush="#E5E7EB"
-        BorderThickness="1"
-        CornerRadius="8"
-        Padding="24">
+                <TextBlock
+                    Text="Prepare and generate single part drawings from Tekla Structures."
+                    Margin="0,6,0,0"
+                    FontSize="13"
+                    Foreground="#6B7280"/>
 
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-
-                        <!-- Summary -->
-                        <Grid Grid.Row="0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <StackPanel>
-                                <TextBlock x:Name="SelectionTitleText"
-                           Text="No parts selected"
-                           FontSize="16"
-                           FontWeight="SemiBold"
-                           Foreground="#111827"/>
-
-                                <TextBlock x:Name="SelectionDetailText"
-                           Text="Select parts from Tekla Structures to begin."
-                           Margin="0,6,0,0"
-                           FontSize="13"
-                           Foreground="#6B7280"/>
-                            </StackPanel>
-
-                            <Button Grid.Column="1"
-                    Content="Select Parts from Tekla"
-                    Width="190"
-                    Height="40"
-                    Click="SelectPartsButton_Click"/>
-                        </Grid>
-
-                        <!-- Divider -->
-                        <Border Grid.Row="1"
-                Height="1"
-                Margin="0,20"
-                Background="#E5E7EB"/>
-
-                        <!-- Candidate Table -->
-                        <DataGrid x:Name="CandidateDataGrid"
-                                  Grid.Row="2"
-                                  Height="360"
-                                  AutoGenerateColumns="False"
-                                  IsReadOnly="True"
-                                  CanUserAddRows="False"
-                                  CanUserDeleteRows="False"
-                                  SelectionMode="Single"
-                                  HeadersVisibility="Column"
-                                  GridLinesVisibility="Horizontal"
-                                  BorderThickness="0"
-                                  Background="White"
-                                  RowHeaderWidth="0">
-
-                            <DataGrid.Columns>
-
-                                <DataGridTextColumn Header="Piece Mark"
-                                    Binding="{Binding PieceMark}"
-                                    Width="*"/>
-
-                                <DataGridTextColumn Header="Profile"
-                                    Binding="{Binding Profile}"
-                                    Width="*"/>
-
-                                <DataGridTextColumn Header="Material"
-                                    Binding="{Binding Material}"
-                                    Width="*"/>
-
-                                <DataGridTextColumn Header="Type"
-                                    Binding="{Binding MaterialType}"
-                                    Width="*"/>
-
-                                <DataGridTextColumn Header="Qty"
-                                    Binding="{Binding PartCount}"
-                                    Width="80"/>
-
-                            </DataGrid.Columns>
-
-                        </DataGrid>
-                    </Grid>
-                </Border>
 
             </StackPanel>
 
+
+
+            <!-- =================================================
+                 MAIN CARD
+                 ================================================= -->
+
+            <Border Grid.Row="1"
+                    Margin="0,22,0,0"
+                    Background="White"
+                    BorderBrush="#E5E7EB"
+                    BorderThickness="1"
+                    CornerRadius="8">
+
+
+                <Grid>
+
+
+                    <Grid.RowDefinitions>
+
+                        <RowDefinition Height="Auto"/>
+
+                        <RowDefinition Height="1"/>
+
+                        <RowDefinition Height="Auto"/>
+
+                        <RowDefinition Height="*"/>
+
+                    </Grid.RowDefinitions>
+
+
+
+                    <!-- =================================================
+                         SELECTION + MAIN ACTIONS
+                         ================================================= -->
+
+                    <Grid Grid.Row="0"
+                          Margin="24,20">
+
+
+                        <Grid.ColumnDefinitions>
+
+                            <ColumnDefinition Width="*"/>
+
+                            <ColumnDefinition Width="Auto"/>
+
+                        </Grid.ColumnDefinitions>
+
+
+
+                        <!-- SELECTION INFO -->
+
+                        <StackPanel VerticalAlignment="Center">
+
+
+                            <TextBlock x:Name="SelectionTitleText"
+                                       Text="No parts selected"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Foreground="#111827"/>
+
+
+                            <TextBlock x:Name="SelectionDetailText"
+                                       Text="Select parts from Tekla Structures to begin."
+                                       Margin="0,5,0,0"
+                                       FontSize="13"
+                                       Foreground="#6B7280"/>
+
+
+                        </StackPanel>
+
+
+
+                        <!-- ACTION BUTTONS -->
+
+                        <StackPanel Grid.Column="1"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center">
+
+
+                            <Button x:Name="SelectPartsButton"
+                                    Content="Select Parts from Tekla"
+                                    Width="180"
+                                    Height="38"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Click="SelectPartsButton_Click"/>
+
+
+                            <Button x:Name="DryRunButton"
+                                    Content="Run Dry Check"
+                                    Width="132"
+                                    Height="38"
+                                    Margin="10,0,0,0"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    IsEnabled="False"
+                                    Click="DryRunButton_Click"/>
+
+
+                        </StackPanel>
+
+
+                    </Grid>
+
+
+
+                    <!-- =================================================
+                         DIVIDER
+                         ================================================= -->
+
+                    <Border Grid.Row="1"
+                            Background="#E5E7EB"/>
+
+
+
+                    <!-- =================================================
+                         SUMMARY + FILTER + CREATE
+                         ================================================= -->
+
+                    <Grid Grid.Row="2"
+                          Margin="24,16">
+
+
+                        <Grid.ColumnDefinitions>
+
+                            <ColumnDefinition Width="105"/>
+
+                            <ColumnDefinition Width="115"/>
+
+                            <ColumnDefinition Width="140"/>
+
+                            <ColumnDefinition Width="100"/>
+
+                            <ColumnDefinition Width="*"/>
+
+                            <ColumnDefinition Width="Auto"/>
+
+                        </Grid.ColumnDefinitions>
+
+
+
+                        <!-- READY -->
+
+                        <StackPanel Grid.Column="0">
+
+
+                            <TextBlock Text="READY"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="#9CA3AF"/>
+
+
+                            <TextBlock x:Name="ReadyCountText"
+                                       Text="-"
+                                       Margin="0,3,0,0"
+                                       FontSize="20"
+                                       FontWeight="SemiBold"
+                                       Foreground="#111827"/>
+
+
+                        </StackPanel>
+
+
+
+                        <!-- EXISTING -->
+
+                        <StackPanel Grid.Column="1">
+
+
+                            <TextBlock Text="EXISTING"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="#9CA3AF"/>
+
+
+                            <TextBlock x:Name="ExistingCountText"
+                                       Text="-"
+                                       Margin="0,3,0,0"
+                                       FontSize="20"
+                                       FontWeight="SemiBold"
+                                       Foreground="#111827"/>
+
+
+                        </StackPanel>
+
+
+
+                        <!-- NEED REVIEW -->
+
+                        <StackPanel Grid.Column="2">
+
+
+                            <TextBlock Text="NEED REVIEW"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="#9CA3AF"/>
+
+
+                            <TextBlock x:Name="ReviewCountText"
+                                       Text="-"
+                                       Margin="0,3,0,0"
+                                       FontSize="20"
+                                       FontWeight="SemiBold"
+                                       Foreground="#111827"/>
+
+
+                        </StackPanel>
+
+
+
+                        <!-- FAILED -->
+
+                        <StackPanel Grid.Column="3">
+
+
+                            <TextBlock Text="FAILED"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="#9CA3AF"/>
+
+
+                            <TextBlock x:Name="FailedCountText"
+                                       Text="-"
+                                       Margin="0,3,0,0"
+                                       FontSize="20"
+                                       FontWeight="SemiBold"
+                                       Foreground="#111827"/>
+
+
+                        </StackPanel>
+
+
+
+                        <!-- RIGHT CONTROLS -->
+
+                        <StackPanel Grid.Column="5"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center">
+
+
+                            <!-- STATUS FILTER -->
+
+                            <StackPanel Margin="0,0,16,0">
+
+
+                                <TextBlock Text="STATUS"
+                                           Margin="1,0,0,5"
+                                           FontSize="10"
+                                           FontWeight="SemiBold"
+                                           Foreground="#9CA3AF"/>
+
+
+                                <ComboBox x:Name="StatusFilterComboBox"
+                                          Width="145"
+                                          SelectedIndex="0"
+                                          SelectionChanged="StatusFilterComboBox_SelectionChanged">
+
+
+                                    <ComboBoxItem Content="All Status"/>
+
+                                    <ComboBoxItem Content="ReadyToCreate"/>
+
+                                    <ComboBoxItem Content="Existing"/>
+
+                                    <ComboBoxItem Content="NeedReview"/>
+
+                                    <ComboBoxItem Content="Failed"/>
+
+
+                                </ComboBox>
+
+
+                            </StackPanel>
+
+
+
+                            <!-- BATCH SIZE -->
+
+                            <StackPanel Margin="0,0,10,0">
+
+
+                                <TextBlock Text="BATCH SIZE"
+                                           Margin="1,0,0,5"
+                                           FontSize="10"
+                                           FontWeight="SemiBold"
+                                           Foreground="#9CA3AF"/>
+
+
+                                <ComboBox x:Name="BatchSizeComboBox"
+                                          Width="72"
+                                          SelectedIndex="1">
+
+
+                                    <ComboBoxItem Content="1"/>
+
+                                    <ComboBoxItem Content="3"/>
+
+                                    <ComboBoxItem Content="5"/>
+
+                                    <ComboBoxItem Content="10"/>
+
+
+                                </ComboBox>
+
+
+                            </StackPanel>
+
+                            <!-- SELECT READY -->
+
+                            <StackPanel Margin="0,0,10,0">
+
+                                <TextBlock Text=" "
+                                           Margin="0,0,0,5"
+                                           FontSize="10"/>
+
+                                <Button x:Name="SelectBatchButton"
+                                        Content="Select Ready"
+                                        Width="105"
+                                        Height="36"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        IsEnabled="False"
+                                        Click="SelectBatchButton_Click"/>
+
+                            </StackPanel>
+
+                            <!-- CREATE -->
+
+                            <StackPanel>
+
+
+                                <TextBlock Text=" "
+                                           Margin="0,0,0,5"
+                                           FontSize="10"/>
+
+
+                                <Button x:Name="CreateDrawingsButton"
+                                        Content="Create Drawings"
+                                        Width="145"
+                                        Height="36"
+                                        Style="{StaticResource PrimaryButtonStyle}"
+                                        IsEnabled="False"
+                                        Click="CreateDrawingsButton_Click"/>
+
+
+                            </StackPanel>
+
+
+                        </StackPanel>
+
+
+                    </Grid>
+
+
+
+                    <!-- =================================================
+                         CANDIDATE GRID
+                         ================================================= -->
+
+                    <DataGrid x:Name="CandidateDataGrid"
+                              Grid.Row="3"
+
+                              AutoGenerateColumns="False"
+
+                              IsReadOnly="True"
+
+                              CanUserAddRows="False"
+
+                              CanUserDeleteRows="False"
+
+                              CanUserResizeRows="False"
+
+                              CanUserResizeColumns="True"
+
+                              CanUserReorderColumns="False"
+
+                              CanUserSortColumns="True"
+
+                              SelectionMode="Extended"
+
+                              SelectionUnit="FullRow"
+
+                              HeadersVisibility="Column"
+
+                              GridLinesVisibility="None"
+
+                              BorderBrush="#E5E7EB"
+
+                              BorderThickness="0,1,0,0"
+
+                              Background="White"
+
+                              RowHeaderWidth="0"
+
+                              HorizontalScrollBarVisibility="Auto"
+
+                              VerticalScrollBarVisibility="Auto">
+
+
+                        <DataGrid.Columns>
+
+
+                            <!-- PIECE MARK -->
+
+                            <DataGridTextColumn
+                                Header="PIECE MARK"
+                                Binding="{Binding Candidate.PieceMark}"
+                                SortMemberPath="Candidate.PieceMark"
+                                Width="1.15*"/>
+
+
+                            <!-- PROFILE -->
+
+                            <DataGridTextColumn
+                                Header="PROFILE"
+                                Binding="{Binding Candidate.Profile}"
+                                SortMemberPath="Candidate.Profile"
+                                Width="1.45*"/>
+
+
+                            <!-- MATERIAL -->
+
+                            <DataGridTextColumn
+                                Header="MATERIAL"
+                                Binding="{Binding Candidate.Material}"
+                                SortMemberPath="Candidate.Material"
+                                Width="1.3*"/>
+
+
+                            <!-- TYPE -->
+
+                            <DataGridTextColumn
+                                Header="TYPE"
+                                Binding="{Binding Candidate.MaterialType}"
+                                SortMemberPath="Candidate.MaterialType"
+                                Width="110"/>
+
+
+                            <!-- QTY -->
+
+                            <DataGridTextColumn
+                                Header="QTY"
+                                Binding="{Binding Candidate.PartCount}"
+                                SortMemberPath="Candidate.PartCount"
+                                Width="70"/>
+
+
+                            <!-- STATUS -->
+
+                            <DataGridTextColumn
+                                Header="STATUS"
+                                Binding="{Binding Status}"
+                                SortMemberPath="Status"
+                                Width="120"/>
+
+
+                            <!-- REASON -->
+
+                            <DataGridTextColumn
+                                Header="REASON"
+                                Binding="{Binding Message}"
+                                SortMemberPath="Message"
+                                Width="1.9*"/>
+
+
+                        </DataGrid.Columns>
+
+
+                    </DataGrid>
+
+
+                </Grid>
+
+
+            </Border>
+
+
         </Grid>
 
+
     </Grid>
+
 
 </Window>
