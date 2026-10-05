@@ -1,4 +1,6 @@
-﻿using SinglePartAutoFix.Application.Models;
+﻿using SinglePartAutoFix.Application.Configuration;
+using SinglePartAutoFix.Application.Interfaces;
+using SinglePartAutoFix.Application.Models;
 using SinglePartAutoFix.Application.Services;
 using SinglePartAutoFix.Domain.Models;
 using SinglePartAutoFix.Infrastructure.Tekla;
@@ -27,9 +29,16 @@ namespace SinglePartAutoFix.Wpf
 
         private readonly Dictionary<string, DrawingStandardizationResult> _standardizationResults = new Dictionary<string, DrawingStandardizationResult>(StringComparer.OrdinalIgnoreCase);
 
+        private readonly IDrawingStandardProfileProvider _drawingStandardProfileProvider;
+
         public MainWindow()
         {
             InitializeComponent();
+
+            var standardProfiles = DrawingStandardConfiguration.CreateProfile();
+            _drawingStandardProfileProvider = new DrawingStandardProfileProvider(standardProfiles);
+            UpdateDrawingStandardizationStatus();
+
             _teklaSession = new TeklaModelSession();
             _partReader = new TeklaPartReader(_teklaSession);
             _candidateBuilder = new DrawingCandidateBuilder();
@@ -501,6 +510,40 @@ namespace SinglePartAutoFix.Wpf
                 CandidateDataGrid.ScrollIntoView(
                     visibleReadyItems.First());
             }
+        }
+
+        private void UpdateDrawingStandardizationStatus()
+        {
+            var enabledProfiles =
+                _drawingStandardProfileProvider
+                    .GetProfiles()
+                    .Where(profile => profile.IsEnabled)
+                    .ToList();
+
+            if (enabledProfiles.Count == 0)
+            {
+                StandardizationStatusText.Text =
+                    "Not Configured";
+
+                StandardizationStatusText.Foreground =
+                    new SolidColorBrush(
+                        Color.FromRgb(180, 83, 9));
+
+                StandardizationStatusText.ToolTip =
+                    "Engineering drawing standard has not been configured.";
+
+                return;
+            }
+
+            StandardizationStatusText.Text =
+                "Configured";
+
+            StandardizationStatusText.Foreground =
+                new SolidColorBrush(
+                    Color.FromRgb(22, 101, 52));
+
+            StandardizationStatusText.ToolTip =
+                "Drawing standard configuration is available.";
         }
 
         private void ShowTeklaRuntimeInfo()

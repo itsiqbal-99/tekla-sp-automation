@@ -768,32 +768,12 @@
 
                         </Grid.ColumnDefinitions>
 
-                        
+
 
 
                         <!-- SELECTION INFO -->
 
                         <StackPanel VerticalAlignment="Center">
-
-                            <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
-
-                                <TextBlock Text="Drawing Standardization:"
-                                       FontSize="12"
-                                       Foreground="#6B7280"
-                                       VerticalAlignment="Center"/>     
-
-                                <TextBlock x:Name="StandardizationStatusText"
-                                       Text="Not Configured"
-                                       Margin="6,0,0,0"
-                                       FontSize="12"
-                                       FontWeight="SemiBold"
-                                       Foreground="#B45309"
-                                       VerticalAlignment="Center"
-                                        ToolTip="Engineering drawing standard has not been configured. Drawing creation is available, but automatic drawing standardization is not yet applied."
-                                           />
-
-                            </StackPanel>
-
 
                             <TextBlock x:Name="SelectionTitleText"
                                        Text="No parts selected"
@@ -801,13 +781,29 @@
                                        FontWeight="SemiBold"
                                        Foreground="#111827"/>
 
-
                             <TextBlock x:Name="SelectionDetailText"
                                        Text="Select parts from Tekla Structures to begin."
                                        Margin="0,5,0,0"
                                        FontSize="13"
                                        Foreground="#6B7280"/>
 
+                            <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+
+                                <TextBlock Text="Drawing Standardization:"
+                                           FontSize="12"
+                                           Foreground="#6B7280"
+                                           VerticalAlignment="Center"/>
+
+                                                        <TextBlock x:Name="StandardizationStatusText"
+                                           Text="Not Configured"
+                                           Margin="6,0,0,0"
+                                           FontSize="12"
+                                           FontWeight="SemiBold"
+                                           Foreground="#B45309"
+                                           VerticalAlignment="Center"
+                                           ToolTip="Engineering drawing standard has not been configured. Drawing creation is available, but automatic drawing standardization is not yet applied."/>
+
+                            </StackPanel>
 
                         </StackPanel>
 
