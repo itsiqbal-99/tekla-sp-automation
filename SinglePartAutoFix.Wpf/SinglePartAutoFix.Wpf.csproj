@@ -59,6 +59,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Runtime.Remoting" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Core" />
@@ -118,9 +119,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\SinglePartAutoFix\SinglePartAutoFix.csproj">
-      <Project>{445f73a1-a5f2-4bdd-9192-5e3f8c85277f}</Project>
-      <Name>SinglePartAutoFix</Name>
+    <ProjectReference Include="..\SinglePartAutoFix.Core\SinglePartAutoFix.Core.csproj">
+      <Project>{0165525b-6106-456e-95a6-5a9122574b23}</Project>
+      <Name>SinglePartAutoFix.Core</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
