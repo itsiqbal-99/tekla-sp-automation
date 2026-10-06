@@ -16,6 +16,8 @@ namespace SinglePartAutoFix.Application.Configuration
                 version: "1.0",
                 isEnabled: true)
             };
+
+            //return new List<DrawingStandardProfile>();
         }
     }
 }

@@ -26,7 +26,7 @@
                TargetType="Button">
 
             <Setter Property="Background"
-                    Value="#111827"/>
+                    Value="#003eff"/>
 
             <Setter Property="Foreground"
                     Value="White"/>

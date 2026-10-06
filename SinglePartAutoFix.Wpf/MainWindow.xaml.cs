@@ -2,8 +2,10 @@
 using SinglePartAutoFix.Application.Interfaces;
 using SinglePartAutoFix.Application.Models;
 using SinglePartAutoFix.Application.Services;
+using SinglePartAutoFix.Core.Infrastructure.Tekla;
 using SinglePartAutoFix.Domain.Models;
 using SinglePartAutoFix.Infrastructure.Tekla;
+using SinglePartAutoFix.src.Application.Interfaces;
 using SinglePartAutoFix.src.Application.Services;
 using System;
 using System.Collections.Generic;
@@ -30,27 +32,37 @@ namespace SinglePartAutoFix.Wpf
         private readonly Dictionary<string, DrawingStandardizationResult> _standardizationResults = new Dictionary<string, DrawingStandardizationResult>(StringComparer.OrdinalIgnoreCase);
 
         private readonly IDrawingStandardProfileProvider _drawingStandardProfileProvider;
+        private readonly IDrawingStandardConfigurationValidator _drawingStandardConfigurationValidator;
 
         public MainWindow()
         {
             InitializeComponent();
 
-            var standardProfiles = DrawingStandardConfiguration.CreateProfile();
-            _drawingStandardProfileProvider = new DrawingStandardProfileProvider(standardProfiles);
-            UpdateDrawingStandardizationStatus();
-
             _teklaSession = new TeklaModelSession();
             _partReader = new TeklaPartReader(_teklaSession);
             _candidateBuilder = new DrawingCandidateBuilder();
+
+            var standardProfiles = DrawingStandardConfiguration.CreateProfile();
+            _drawingStandardProfileProvider = new DrawingStandardProfileProvider(standardProfiles);
+
+            var configurationResolver = new TeklaDrawingStandardConfigurationResolver(_teklaSession);
+
+            _drawingStandardConfigurationValidator = new TeklaDrawingStandardConfigurationValidator(_teklaSession, configurationResolver);
+
+            UpdateDrawingStandardizationStatus();
 
             var drawingChecker = new TeklaDrawingChecker(_teklaSession);
             var drawingCreator = new TeklaDrawingCreator(_teklaSession);
             var drawingStandardizer = new NoOpDrawingStandardizer();
 
+            var activeStandardProfile = _drawingStandardProfileProvider.GetProfiles()
+                .FirstOrDefault(profile => profile.IsEnabled);
+
             _drawingProcessor = new DrawingProcessor(
                 drawingChecker,
                 drawingCreator,
-                drawingStandardizer);
+                drawingStandardizer,
+                activeStandardProfile);
 
             _drawingCandidates = new List<DrawingCandidate>();
             _dryRunResults = new List<DrawingProcessResult>();
@@ -66,7 +78,10 @@ namespace SinglePartAutoFix.Wpf
                 bool isConnected = _teklaSession.IsConnected();
                 if (isConnected)
                 {
-                    TeklaStatusText.Text = "Tekla Connected";
+                    string modelName = _teklaSession.GetModelName();
+                    TeklaStatusText.Text = string.IsNullOrWhiteSpace(modelName)
+                        ? "Tekla Connected"
+                        : $"Tekla Connected — {modelName}";
                     TeklaStatusIndicator.Fill = new SolidColorBrush(Color.FromRgb(34, 197, 94));
                 }
                 else
@@ -206,6 +221,19 @@ namespace SinglePartAutoFix.Wpf
         {
             try
             {
+                var standardValidation = GetDrawingStandardValidation();
+
+                if (!standardValidation.IsValid)
+                {
+                    MessageBox.Show(
+                        standardValidation.Message,
+                        "Drawing Standard Not Ready",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+
+                    return;
+                }
+
                 int maxItems = GetSelectedBatchSize();
 
                 if (_dryRunResults == null || _dryRunResults.Count == 0)
@@ -514,36 +542,75 @@ namespace SinglePartAutoFix.Wpf
 
         private void UpdateDrawingStandardizationStatus()
         {
-            var enabledProfiles =
-                _drawingStandardProfileProvider
-                    .GetProfiles()
-                    .Where(profile => profile.IsEnabled)
-                    .ToList();
+            var activeProfile = _drawingStandardProfileProvider.GetProfiles().FirstOrDefault(profile => profile.IsEnabled);
 
-            if (enabledProfiles.Count == 0)
+            if (activeProfile == null)
             {
-                StandardizationStatusText.Text =
-                    "Not Configured";
+                StandardizationStatusText.Text = "Not Configured";
 
-                StandardizationStatusText.Foreground =
-                    new SolidColorBrush(
-                        Color.FromRgb(180, 83, 9));
-
-                StandardizationStatusText.ToolTip =
-                    "Engineering drawing standard has not been configured.";
+                StandardizationStatusText.ToolTip = "No enabled Drawing standard profile is configured.";
 
                 return;
             }
 
-            StandardizationStatusText.Text =
-                "Configured";
+            var validation = _drawingStandardConfigurationValidator.Validate(activeProfile);
 
-            StandardizationStatusText.Foreground =
-                new SolidColorBrush(
-                    Color.FromRgb(22, 101, 52));
+            StandardizationStatusText.ToolTip = validation.Message;
 
-            StandardizationStatusText.ToolTip =
-                "Drawing standard configuration is available.";
+            switch (validation.Status)
+            {
+                case DrawingStandardValidationStatus.Ready:
+
+                    StandardizationStatusText.Text = "Ready";
+
+                    StandardizationStatusText.Foreground = new SolidColorBrush(
+                            Color.FromRgb(22, 101, 52));
+
+                    break;
+
+                case DrawingStandardValidationStatus.TeklaNotConnected:
+
+                    StandardizationStatusText.Text = "Tekla Not Connected";
+
+                    StandardizationStatusText.Foreground = new SolidColorBrush(
+                            Color.FromRgb(185, 28, 28));
+
+                    break;
+
+                case DrawingStandardValidationStatus.ConfigurationMissing:
+
+                    StandardizationStatusText.Text = "Configuration Missing";
+
+                    StandardizationStatusText.Foreground = new SolidColorBrush(
+                            Color.FromRgb(185, 28, 28));
+
+                    break;
+
+                default:
+
+                    StandardizationStatusText.Text = "Not Configured";
+
+                    StandardizationStatusText.Foreground = new SolidColorBrush(
+                            Color.FromRgb(180, 83, 9));
+
+                    break;
+            }
+        }
+
+        private DrawingStandardValidationResult GetDrawingStandardValidation()
+        {
+            var activeProfile = _drawingStandardProfileProvider
+                    .GetProfiles()
+                    .FirstOrDefault(profile => profile.IsEnabled);
+
+            if (activeProfile == null)
+            {
+                return DrawingStandardValidationResult.Create(
+                    DrawingStandardValidationStatus.NotConfigured,
+                    "No enabled drawing standard profile is configured.");
+            }
+
+            return _drawingStandardConfigurationValidator.Validate(activeProfile);
         }
 
         private void ShowTeklaRuntimeInfo()

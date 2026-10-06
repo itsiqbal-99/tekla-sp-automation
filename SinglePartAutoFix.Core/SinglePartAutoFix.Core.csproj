@@ -99,6 +99,7 @@
     <Compile Include="Infrastructure\Tekla\ITeklaModelSession.cs" />
     <Compile Include="Infrastructure\Tekla\TeklaDrawingChecker.cs" />
     <Compile Include="Infrastructure\Tekla\TeklaDrawingCreator.cs" />
+    <Compile Include="Infrastructure\Tekla\TeklaDrawingStandardConfigurationResolver.cs" />
     <Compile Include="Infrastructure\Tekla\TeklaDrawingStandardConfigurationValidator.cs" />
     <Compile Include="Infrastructure\Tekla\TeklaModelSession.cs" />
     <Compile Include="Infrastructure\Tekla\TeklaPartReader.cs" />

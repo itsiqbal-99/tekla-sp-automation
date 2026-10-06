@@ -11,13 +11,15 @@ namespace SinglePartAutoFix.Application.Services
         private readonly IDrawingChecker _drawingChecker;
         private readonly IDrawingCreator _drawingCreator;
         private readonly IDrawingStandardizer _drawingStandardizer;
+        private readonly DrawingStandardProfile _standardProfile;
 
 
-        public DrawingProcessor(IDrawingChecker drawingChecker, IDrawingCreator drawingCreator, IDrawingStandardizer drawingStandardizer)
+        public DrawingProcessor(IDrawingChecker drawingChecker, IDrawingCreator drawingCreator, IDrawingStandardizer drawingStandardizer, DrawingStandardProfile standardProfile)
         {
             _drawingChecker = drawingChecker;
             _drawingCreator = drawingCreator;
             _drawingStandardizer = drawingStandardizer;
+            _standardProfile = standardProfile;
         }
 
         public DrawingProcessResult Process(DrawingCandidate candidate, bool dryRun)
@@ -39,7 +41,7 @@ namespace SinglePartAutoFix.Application.Services
                     };
                 }
 
-                if(string.Equals(candidate.MaterialType, "CONCRETE", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(candidate.MaterialType, "CONCRETE", StringComparison.OrdinalIgnoreCase))
                 {
                     return new DrawingProcessResult
                     {
@@ -69,7 +71,7 @@ namespace SinglePartAutoFix.Application.Services
                     };
                 }
 
-                bool created = _drawingCreator.Create(candidate);
+                bool created = _drawingCreator.Create(candidate, _standardProfile);
                 if (created)
                 {
                     _drawingChecker.MarkAsExisting(candidate.PieceMark);
@@ -91,7 +93,8 @@ namespace SinglePartAutoFix.Application.Services
                     Status = DrawingProcessStatus.Failed,
                     Message = "Drawing Creation Failed."
                 };
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 return new DrawingProcessResult
                 {
@@ -100,8 +103,8 @@ namespace SinglePartAutoFix.Application.Services
                     Message = $"Processing FAILED: {ex.Message}"
                 };
             }
-                
-            
+
+
 
         }
     }
