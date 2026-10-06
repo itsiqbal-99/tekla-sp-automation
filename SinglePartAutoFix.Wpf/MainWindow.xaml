@@ -501,6 +501,9 @@
             <Setter Property="VerticalContentAlignment"
                     Value="Center"/>
 
+            <Setter Property="HorizontalContentAlignment"
+                    Value="Center"/>
+
             <Setter Property="FocusVisualStyle"
                     Value="{x:Null}"/>
 
@@ -746,6 +749,8 @@
 
                         <RowDefinition Height="Auto"/>
 
+                        <RowDefinition Height="Auto"/>
+
                         <RowDefinition Height="*"/>
 
                     </Grid.RowDefinitions>
@@ -817,21 +822,63 @@
 
 
                             <Button x:Name="SelectPartsButton"
-                                    Content="Select Parts from Tekla"
                                     Width="180"
                                     Height="38"
                                     Style="{StaticResource SecondaryButtonStyle}"
-                                    Click="SelectPartsButton_Click"/>
+                                    Click="SelectPartsButton_Click">
+
+                                <Grid>
+
+                                    <TextBlock x:Name="SelectPartsButtonText"
+                                               Text="Select Parts from Tekla"/>
+
+                                    <StackPanel x:Name="SelectPartsLoadingContent"
+                                                Orientation="Horizontal"
+                                                Visibility="Collapsed">
+
+                                        <ProgressBar Width="30"
+                                                     Height="4"
+                                                     Margin="0,0,8,0"
+                                                     IsIndeterminate="True"/>
+
+                                        <TextBlock Text="Selecting…"/>
+
+                                    </StackPanel>
+
+                                </Grid>
+
+                            </Button>
 
 
                             <Button x:Name="DryRunButton"
-                                    Content="Run Dry Check"
                                     Width="132"
                                     Height="38"
                                     Margin="10,0,0,0"
                                     Style="{StaticResource PrimaryButtonStyle}"
                                     IsEnabled="False"
-                                    Click="DryRunButton_Click"/>
+                                    Click="DryRunButton_Click">
+
+                                <Grid>
+
+                                    <TextBlock x:Name="DryRunButtonText"
+                                               Text="Run Dry Check"/>
+
+                                    <StackPanel x:Name="DryRunLoadingContent"
+                                                Orientation="Horizontal"
+                                                Visibility="Collapsed">
+
+                                        <ProgressBar Width="26"
+                                                     Height="4"
+                                                     Margin="0,0,7,0"
+                                                     IsIndeterminate="True"/>
+
+                                        <TextBlock Text="Checking…"/>
+
+                                    </StackPanel>
+
+                                </Grid>
+
+                            </Button>
 
 
                         </StackPanel>
@@ -1090,11 +1137,43 @@
 
 
                     <!-- =================================================
+                         SEARCH
+                         ================================================= -->
+
+                    <StackPanel Grid.Row="3"
+                                Margin="24,0,24,12"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Right">
+
+                        <TextBlock Text="SEARCH"
+                                   Margin="0,0,8,0"
+                                   FontSize="10"
+                                   FontWeight="SemiBold"
+                                   Foreground="#9CA3AF"
+                                   VerticalAlignment="Center"/>
+
+                        <TextBox x:Name="GridSearchTextBox"
+                                 Width="260"
+                                 Height="34"
+                                 Padding="10,0"
+                                 FontSize="12"
+                                 Foreground="#374151"
+                                 Background="White"
+                                 BorderBrush="#D1D5DB"
+                                 BorderThickness="1"
+                                 VerticalContentAlignment="Center"
+                                 ToolTip="Search all visible columns"
+                                 TextChanged="GridSearchTextBox_TextChanged"/>
+
+                    </StackPanel>
+
+
+                    <!-- =================================================
                          CANDIDATE GRID
                          ================================================= -->
 
                     <DataGrid x:Name="CandidateDataGrid"
-                              Grid.Row="3"
+                              Grid.Row="4"
 
                               AutoGenerateColumns="False"
 
@@ -1198,11 +1277,38 @@
 
                             <!-- REASON -->
 
-                            <DataGridTextColumn
+                            <DataGridTemplateColumn
                                 Header="REASON"
-                                Binding="{Binding Message}"
                                 SortMemberPath="Message"
-                                Width="1.9*"/>
+                                Width="1.9*">
+
+                                <DataGridTemplateColumn.CellStyle>
+
+                                    <Style TargetType="{x:Type DataGridCell}"
+                                           BasedOn="{StaticResource {x:Type DataGridCell}}">
+
+                                        <Setter Property="HorizontalContentAlignment"
+                                                Value="Stretch"/>
+
+                                    </Style>
+
+                                </DataGridTemplateColumn.CellStyle>
+
+                                <DataGridTemplateColumn.CellTemplate>
+
+                                    <DataTemplate>
+
+                                        <TextBlock Text="{Binding Message}"
+                                                   TextWrapping="Wrap"
+                                                   TextAlignment="Center"
+                                                   HorizontalAlignment="Stretch"
+                                                   VerticalAlignment="Center"/>
+
+                                    </DataTemplate>
+
+                                </DataGridTemplateColumn.CellTemplate>
+
+                            </DataGridTemplateColumn>
 
 
                         </DataGrid.Columns>

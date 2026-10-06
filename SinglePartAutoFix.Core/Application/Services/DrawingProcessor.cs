@@ -76,7 +76,16 @@ namespace SinglePartAutoFix.Application.Services
                 {
                     _drawingChecker.MarkAsExisting(candidate.PieceMark);
 
-                    DrawingStandardizationResult standardizationResult = _drawingStandardizer.Apply(candidate);
+                    DrawingStandardizationResult standardizationResult;
+
+                    if (_standardProfile != null && _standardProfile.IsEnabled && !string.IsNullOrWhiteSpace(_standardProfile.DrawingAttributeName))
+                    {
+                        standardizationResult = DrawingStandardizationResult.Applied($"Tekla drawing standard '{_standardProfile.Name}' applied.");
+                    }
+                    else
+                    {
+                        standardizationResult = _drawingStandardizer.Apply(candidate);
+                    }
 
                     return new DrawingProcessResult
                     {

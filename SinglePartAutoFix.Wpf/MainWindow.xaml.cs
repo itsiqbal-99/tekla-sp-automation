@@ -10,6 +10,7 @@ using SinglePartAutoFix.src.Application.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -104,8 +105,10 @@ namespace SinglePartAutoFix.Wpf
             }
         }
 
-        private void SelectPartsButton_Click(object sender, RoutedEventArgs e)
+        private async void SelectPartsButton_Click(object sender, RoutedEventArgs e)
         {
+            bool isLoading = false;
+
             try
             {
                 if (!_teklaSession.IsConnected())
@@ -115,6 +118,9 @@ namespace SinglePartAutoFix.Wpf
                     UpdateTeklaConnectionStatus();
                     return;
                 }
+
+                SetLoadingState(true, isSelecting: true);
+                isLoading = true;
 
                 _dryRunResults.Clear();
                 _standardizationResults.Clear();
@@ -127,6 +133,7 @@ namespace SinglePartAutoFix.Wpf
                 SelectBatchButton.IsEnabled = false;
 
                 StatusFilterComboBox.SelectedIndex = 0;
+                GridSearchTextBox.Text = string.Empty;
                 CandidateDataGrid.ItemsSource = null;
 
                 var query = new PartQuery
@@ -134,8 +141,19 @@ namespace SinglePartAutoFix.Wpf
                     SelectionMode = PartSelectionMode.Selected
                 };
 
-                var parts = _partReader.GetParts(query);
-                _drawingCandidates = _candidateBuilder.Build(parts);
+                var selection = await Task.Run(() =>
+                {
+                    var selectedParts = _partReader.GetParts(query);
+
+                    return new
+                    {
+                        Parts = selectedParts,
+                        Candidates = _candidateBuilder.Build(selectedParts)
+                    };
+                });
+
+                var parts = selection.Parts;
+                _drawingCandidates = selection.Candidates;
 
                 if (parts.Count == 0)
                 {
@@ -157,10 +175,19 @@ namespace SinglePartAutoFix.Wpf
                 SelectionTitleText.Text = "Unable to read selected parts";
                 SelectionDetailText.Text = ex.Message;
             }
+            finally
+            {
+                if (isLoading)
+                {
+                    SetLoadingState(false, isSelecting: true);
+                }
+            }
         }
 
-        private void DryRunButton_Click(object sender, RoutedEventArgs e)
+        private async void DryRunButton_Click(object sender, RoutedEventArgs e)
         {
+            bool isLoading = false;
+
             try
             {
                 if (_drawingCandidates == null ||
@@ -175,7 +202,11 @@ namespace SinglePartAutoFix.Wpf
                     return;
                 }
 
-                RefreshDryRunResults();
+                SetLoadingState(true, isSelecting: false);
+                isLoading = true;
+
+                var results = await Task.Run(() => CalculateDryRunResults());
+                DisplayDryRunResults(results);
             }
             catch (System.Exception ex)
             {
@@ -185,36 +216,62 @@ namespace SinglePartAutoFix.Wpf
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
+            finally
+            {
+                if (isLoading)
+                {
+                    SetLoadingState(false, isSelecting: false);
+                }
+            }
         }
 
         private void StatusFilterComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            if (_dryRunResults == null ||
-                _dryRunResults.Count == 0 ||
-                StatusFilterComboBox.SelectedItem == null)
+            ApplyGridFilters();
+        }
+
+        private void GridSearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            ApplyGridFilters();
+        }
+
+        private void ApplyGridFilters()
+        {
+            if (_dryRunResults == null || StatusFilterComboBox.SelectedItem == null)
             {
                 return;
             }
 
-            var selectedItem =
-                StatusFilterComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem;
-
+            var selectedItem = StatusFilterComboBox.SelectedItem as ComboBoxItem;
             if (selectedItem == null)
             {
                 return;
             }
 
+            IEnumerable<DrawingProcessResult> filteredResults = _dryRunResults;
             string selectedStatus = selectedItem.Content.ToString();
 
-            if (selectedStatus == "All Status")
+            if (selectedStatus != "All Status")
             {
-                CandidateDataGrid.ItemsSource = _dryRunResults;
-                return;
+                filteredResults = filteredResults.Where(
+                    result => result.Status.ToString() == selectedStatus);
             }
 
-            CandidateDataGrid.ItemsSource = _dryRunResults
-                .Where(x => x.Status.ToString() == selectedStatus)
-                .ToList();
+            string searchText = GridSearchTextBox.Text.Trim();
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                filteredResults = filteredResults.Where(result =>
+                    (result.Candidate?.PieceMark ?? string.Empty).IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    (result.Candidate?.Profile ?? string.Empty).IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    (result.Candidate?.Material ?? string.Empty).IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    (result.Candidate?.MaterialType ?? string.Empty).IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    (result.Candidate?.PartCount.ToString() ?? string.Empty).IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    result.Status.ToString().IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    (result.StandardizationDisplay ?? string.Empty).IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    (result.Message ?? string.Empty).IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0);
+            }
+
+            CandidateDataGrid.ItemsSource = filteredResults.ToList();
         }
 
         private void CreateDrawingsButton_Click(object sender, RoutedEventArgs e)
@@ -403,14 +460,19 @@ namespace SinglePartAutoFix.Wpf
                 return;
             }
 
-            _dryRunResults = _drawingCandidates
+            DisplayDryRunResults(CalculateDryRunResults());
+        }
+
+        private List<DrawingProcessResult> CalculateDryRunResults()
+        {
+            var results = _drawingCandidates
                 .Select(candidate =>
                     _drawingProcessor.Process(
                         candidate,
                         dryRun: true))
                 .ToList();
 
-            foreach (var result in _dryRunResults)
+            foreach (var result in results)
             {
                 if (result.Candidate == null || string.IsNullOrWhiteSpace(result.Candidate.PieceMark))
                 {
@@ -426,6 +488,13 @@ namespace SinglePartAutoFix.Wpf
                     result.Standardization = standardizationResult;
                 }
             }
+
+            return results;
+        }
+
+        private void DisplayDryRunResults(List<DrawingProcessResult> results)
+        {
+            _dryRunResults = results;
 
             int ready = _dryRunResults.Count(
                 x => x.Status == DrawingProcessStatus.ReadyToCreate);
@@ -445,12 +514,45 @@ namespace SinglePartAutoFix.Wpf
             FailedCountText.Text = failed.ToString();
 
             StatusFilterComboBox.SelectedIndex = 0;
+            GridSearchTextBox.Text = string.Empty;
 
             CandidateDataGrid.ItemsSource = null;
             CandidateDataGrid.ItemsSource = _dryRunResults;
 
             CreateDrawingsButton.IsEnabled = ready > 0;
             SelectBatchButton.IsEnabled = ready > 0;
+        }
+
+        private void SetLoadingState(bool isLoading, bool isSelecting)
+        {
+            SelectPartsButtonText.Visibility = isLoading && isSelecting
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+            SelectPartsLoadingContent.Visibility = isLoading && isSelecting
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
+            DryRunButtonText.Visibility = isLoading && !isSelecting
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+            DryRunLoadingContent.Visibility = isLoading && !isSelecting
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
+            SelectPartsButton.IsEnabled = !isLoading;
+            DryRunButton.IsEnabled = !isLoading &&
+                _drawingCandidates != null &&
+                _drawingCandidates.Count > 0;
+            StatusFilterComboBox.IsEnabled = !isLoading;
+            GridSearchTextBox.IsEnabled = !isLoading;
+            BatchSizeComboBox.IsEnabled = !isLoading;
+
+            bool hasReadyResults = _dryRunResults != null &&
+                _dryRunResults.Any(x => x.Status == DrawingProcessStatus.ReadyToCreate);
+
+            SelectBatchButton.IsEnabled = !isLoading && hasReadyResults;
+            CreateDrawingsButton.IsEnabled = !isLoading && hasReadyResults;
+            Mouse.OverrideCursor = isLoading ? Cursors.Wait : null;
         }
 
         private int GetSelectedBatchSize()
