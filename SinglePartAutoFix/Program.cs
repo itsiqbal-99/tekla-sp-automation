@@ -3,11 +3,12 @@ using SinglePartAutoFix.Application.Services;
 using SinglePartAutoFix.Domain.Models;
 using SinglePartAutoFix.Infrastructure.Logging;
 using SinglePartAutoFix.Infrastructure.Tekla;
+using SinglePartAutoFix.src.Application.Services;
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-using System.Net.NetworkInformation;
-using Tekla.Structures.Drawing;
 
 class Program
 {
@@ -41,18 +42,24 @@ class Program
             };
 
             var parts = partReader.GetParts(query);
-            var drawingCandidates = BuildDrawingCandidates(parts);
+            //var drawingCandidates = BuildDrawingCandidates(parts);
+            var candidateBuilder = new DrawingCandidateBuilder();
+            var drawingCandidates = candidateBuilder.Build(parts);
+
 
             Console.WriteLine();
             Console.WriteLine($"Selected physical parts : {parts.Count}");
             Console.WriteLine($"Drawing candidates      : {drawingCandidates.Count}");
 
+
             var drawingChecker = new TeklaDrawingChecker(tekla);
             var drawingCreator = new TeklaDrawingCreator(tekla);
+            var drawingStandardizer = new NoOpDrawingStandardizer();
 
             var drawingProcessor = new DrawingProcessor(
                 drawingChecker,
-                drawingCreator
+                drawingCreator,
+                drawingStandardizer
             );
 
             var logger = new SimpleFileLogger();
@@ -60,7 +67,13 @@ class Program
             var dryRunResult = RunDryRun(drawingProcessor, drawingCandidates);
             logger.Write("DRY RUN", dryRunResult);
 
+            var totalReady = dryRunResult.Count(x => x.Status == DrawingProcessStatus.ReadyToCreate);
+
+            
+
             var batchResults = RunControllerBatch(drawingProcessor, dryRunResult, MaxItems: 3);
+            
+
             logger.Write("CONTROLLED BATCH", batchResults);
             //RunSingleCreateTest(drawingProcessor, drawingCandidates, "BP/275");
         }
@@ -75,31 +88,6 @@ class Program
         Console.WriteLine("Press ENTER to exit...");
         Console.ReadLine();
     }
-
-    private static List<DrawingCandidate> BuildDrawingCandidates(
-        IReadOnlyList<PartInfo> parts)
-    {
-        return parts
-            .Where(part => !string.IsNullOrWhiteSpace(part.PieceMark))
-            .GroupBy(part => part.PieceMark)
-            .Select(group =>
-            {
-                var representative = group.First();
-
-                return new DrawingCandidate
-                {
-                    RepresentativePartId = representative.Id,
-                    PieceMark = representative.PieceMark,
-                    Profile = representative.Profile,
-                    Material = representative.Material,
-                    MaterialType = representative.MaterialType,
-                    PartCount = group.Count(),
-                    IsNumberingUpToDate = group.All(part => part.isNumberingUpToDate)
-                };
-            })
-            .ToList();
-    }
-
     private static List<DrawingProcessResult> RunDryRun(
         DrawingProcessor drawingProcessor,
         IReadOnlyList<DrawingCandidate> drawingCandidates)
@@ -203,6 +191,9 @@ class Program
         Console.WriteLine();
         Console.WriteLine("=== BATCH RESULT ===");
 
+        var startedAt = DateTimeOffset.Now;
+        var stopwatch = Stopwatch.StartNew();
+
         var batchResults = new List<DrawingProcessResult>();
 
         foreach (var candidate in candidatesToCreate)
@@ -210,10 +201,13 @@ class Program
             var result = drawingProcessor.Process(candidate, dryRun: false);
             batchResults.Add(result);
 
+            var Standardization = result.Standardization.Status.ToString();
+
             Console.WriteLine(
                 $"{candidate.PieceMark} | " +
                 $"{result.Status} | " +
-                $"{result.Message}"
+                $"{result.Message}" +
+                $"Standardization : {Standardization}" 
                 );
         }
 
@@ -235,6 +229,13 @@ class Program
         Console.WriteLine(
             $"Failed      : {batchResults.Count(x => x.Status == DrawingProcessStatus.Failed)}"
         );
+
+        stopwatch.Stop();
+        var finishedAt = DateTimeOffset.Now;
+        Console.WriteLine($"Started  : {startedAt:yyyy-MM-dd HH:mm:ss.fff zzz}");
+          Console.WriteLine($"Finished : {finishedAt:yyyy-MM-dd HH:mm:ss.fff zzz}");
+        Console.WriteLine($"Duration : {stopwatch.Elapsed}");
+        Console.WriteLine($"Total ms : {stopwatch.Elapsed.TotalMilliseconds:N0} ms");
 
         return batchResults;
     }

@@ -3,7 +3,6 @@ using SinglePartAutoFix.Application.Models;
 using SinglePartAutoFix.Domain.Models;
 using SinglePartAutoFix.src.Application.Interfaces;
 using System;
-using System.Runtime.Remoting.Messaging;
 
 namespace SinglePartAutoFix.Application.Services
 {
@@ -11,12 +10,16 @@ namespace SinglePartAutoFix.Application.Services
     {
         private readonly IDrawingChecker _drawingChecker;
         private readonly IDrawingCreator _drawingCreator;
+        private readonly IDrawingStandardizer _drawingStandardizer;
+        private readonly DrawingStandardProfile _standardProfile;
 
 
-        public DrawingProcessor(IDrawingChecker drawingChecked, IDrawingCreator drawingCreator)
+        public DrawingProcessor(IDrawingChecker drawingChecker, IDrawingCreator drawingCreator, IDrawingStandardizer drawingStandardizer, DrawingStandardProfile standardProfile)
         {
-            _drawingChecker = drawingChecked;
+            _drawingChecker = drawingChecker;
             _drawingCreator = drawingCreator;
+            _drawingStandardizer = drawingStandardizer;
+            _standardProfile = standardProfile;
         }
 
         public DrawingProcessResult Process(DrawingCandidate candidate, bool dryRun)
@@ -38,7 +41,7 @@ namespace SinglePartAutoFix.Application.Services
                     };
                 }
 
-                if(string.Equals(candidate.MaterialType, "CONCRETE", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(candidate.MaterialType, "CONCRETE", StringComparison.OrdinalIgnoreCase))
                 {
                     return new DrawingProcessResult
                     {
@@ -68,15 +71,28 @@ namespace SinglePartAutoFix.Application.Services
                     };
                 }
 
-                bool created = _drawingCreator.Create(candidate);
+                bool created = _drawingCreator.Create(candidate, _standardProfile);
                 if (created)
                 {
                     _drawingChecker.MarkAsExisting(candidate.PieceMark);
+
+                    DrawingStandardizationResult standardizationResult;
+
+                    if (_standardProfile != null && _standardProfile.IsEnabled && !string.IsNullOrWhiteSpace(_standardProfile.DrawingAttributeName))
+                    {
+                        standardizationResult = DrawingStandardizationResult.Applied($"Tekla drawing standard '{_standardProfile.Name}' applied.");
+                    }
+                    else
+                    {
+                        standardizationResult = _drawingStandardizer.Apply(candidate);
+                    }
+
                     return new DrawingProcessResult
                     {
                         Candidate = candidate,
                         Status = DrawingProcessStatus.Created,
-                        Message = "Drawing Created Successfully"
+                        Message = "Drawing Created Successfully",
+                        Standardization = standardizationResult
                     };
                 }
 
@@ -86,7 +102,8 @@ namespace SinglePartAutoFix.Application.Services
                     Status = DrawingProcessStatus.Failed,
                     Message = "Drawing Creation Failed."
                 };
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 return new DrawingProcessResult
                 {
@@ -95,8 +112,8 @@ namespace SinglePartAutoFix.Application.Services
                     Message = $"Processing FAILED: {ex.Message}"
                 };
             }
-                
-            
+
+
 
         }
     }

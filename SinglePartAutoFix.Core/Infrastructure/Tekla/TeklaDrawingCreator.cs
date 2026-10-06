@@ -1,4 +1,5 @@
 ﻿using SinglePartAutoFix.Application.Interfaces;
+using SinglePartAutoFix.Application.Models;
 using SinglePartAutoFix.Domain.Models;
 using System;
 using Tekla.Structures;
@@ -6,7 +7,7 @@ using Tekla.Structures.Drawing;
 
 namespace SinglePartAutoFix.Infrastructure.Tekla
 {
-    public class TeklaDrawingCreator: IDrawingCreator
+    public class TeklaDrawingCreator : IDrawingCreator
     {
         private readonly TeklaModelSession _tekla;
 
@@ -15,28 +16,38 @@ namespace SinglePartAutoFix.Infrastructure.Tekla
             _tekla = tekla;
         }
 
-        public bool Create(DrawingCandidate candidate)
+        public bool Create(DrawingCandidate candidate, DrawingStandardProfile standardProfile = null)
         {
             if (candidate == null)
             {
                 throw new ArgumentNullException(nameof(candidate));
             }
 
-            if(!_tekla.IsConnected())
+            if (!_tekla.IsConnected())
             {
                 Console.WriteLine("Tekla Drawing API is not Connected");
                 return false;
             }
 
             var drawingHandler = new DrawingHandler();
-            if(!drawingHandler.GetConnectionStatus())
+            if (!drawingHandler.GetConnectionStatus())
             {
                 Console.WriteLine("Tekla Drawing API is not Connected");
                 return false;
             }
 
             var partIdentifier = new Identifier(candidate.RepresentativePartId);
-            var drawing = new SinglePartDrawing(partIdentifier);
+
+            SinglePartDrawing drawing;
+            if (standardProfile != null && standardProfile.IsEnabled && !string.IsNullOrWhiteSpace(standardProfile.DrawingAttributeName))
+            {
+                drawing = new SinglePartDrawing(partIdentifier, standardProfile.DrawingAttributeName);
+            }
+            else
+            {
+                drawing = new SinglePartDrawing(partIdentifier);
+            }
+
 
             return drawing.Insert();
 
