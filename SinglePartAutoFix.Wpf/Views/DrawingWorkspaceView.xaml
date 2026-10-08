@@ -1,0 +1,498 @@
+<UserControl x:Class="SinglePartAutoFix.Wpf.Views.DrawingWorkspaceView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             MinWidth="1050"
+             MinHeight="680"
+             Background="#F7F8FA"
+             FontFamily="Segoe UI">
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="WorkspaceBorderBrush" Color="#E4E9F2"/>
+        <SolidColorBrush x:Key="WorkspaceMutedBrush" Color="#64748B"/>
+        <SolidColorBrush x:Key="WorkspaceHeadingBrush" Color="#111827"/>
+
+        <Style x:Key="ToolbarLabelStyle" TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,0,0,6"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#64748B"/>
+        </Style>
+
+        <Style x:Key="WorkspaceComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Padding" Value="10,0"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="{StaticResource WorkspaceBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="WorkspaceTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Padding" Value="11,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="{StaticResource WorkspaceBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="Background" Value="#F8FAFD"/>
+            <Setter Property="BorderBrush" Value="{StaticResource WorkspaceBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Foreground" Value="#64748B"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style TargetType="DataGridCell">
+            <Setter Property="Padding" Value="12,7"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="#334155"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        </Style>
+
+        <Style TargetType="DataGridRow">
+            <Setter Property="MinHeight" Value="42"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#EDF1F6"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Style.Triggers>
+                <Trigger Property="AlternationIndex" Value="1">
+                    <Setter Property="Background" Value="#FBFCFE"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#F5F7FA"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#EEF2F7"/>
+                    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="MetricLabelStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#64748B"/>
+        </Style>
+
+        <Style x:Key="MetricValueStyle" TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,3,0,0"/>
+            <Setter Property="FontSize" Value="21"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="68"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Application header -->
+        <Border Grid.Row="0"
+                Background="White"
+                BorderBrush="{StaticResource WorkspaceBorderBrush}"
+                BorderThickness="0,0,0,1">
+            <Grid Margin="28,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="3"
+                            Height="34"
+                            Margin="0,0,12,0"
+                            Background="{StaticResource PrimaryBrush}"
+                            CornerRadius="2"/>
+                    <StackPanel>
+                        <TextBlock Text="Engineering Automation Hub"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource WorkspaceHeadingBrush}"/>
+                        <TextBlock Text="Single-part drawing automation"
+                                   Margin="0,2,0,0"
+                                   FontSize="10"
+                                   Foreground="{StaticResource WorkspaceMutedBrush}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Padding="11,6"
+                            Background="#F8FAFC"
+                            BorderBrush="{StaticResource WorkspaceBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="16">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse x:Name="TeklaStatusIndicator"
+                                     Width="7"
+                                     Height="7"
+                                     Margin="0,0,7,0"
+                                     VerticalAlignment="Center"
+                                     Fill="{StaticResource PrimaryBrush}"/>
+                            <TextBlock x:Name="TeklaStatusText"
+                                       MaxWidth="235"
+                                       VerticalAlignment="Center"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="#475569"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Width="1"
+                            Height="28"
+                            Margin="16,0"
+                            Background="{StaticResource WorkspaceBorderBrush}"/>
+
+                    <StackPanel MinWidth="116" VerticalAlignment="Center">
+                        <TextBlock Text="SIGNED IN AS"
+                                   FontSize="9"
+                                   FontWeight="SemiBold"
+                                   Foreground="#94A3B8"/>
+                        <TextBlock x:Name="UserDisplayNameText"
+                                   Margin="0,2,0,0"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource WorkspaceHeadingBrush}"/>
+                    </StackPanel>
+
+                    <Button Width="82"
+                            Height="34"
+                            Margin="24,0,0,0"
+                            Padding="18,0"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Content="Logout"
+                            Click="Logout_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Workspace content -->
+        <Grid Grid.Row="1" Margin="28,20,28,24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="14"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel>
+                    <TextBlock Text="Drawing workspace"
+                               FontSize="23"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource WorkspaceHeadingBrush}"/>
+                    <TextBlock Text="Review the selected parts before creating drawings in Tekla Structures."
+                               Margin="0,4,0,0"
+                               FontSize="11"
+                               Foreground="{StaticResource WorkspaceMutedBrush}"/>
+                </StackPanel>
+
+                <Border Grid.Column="1"
+                        Padding="12,7"
+                        VerticalAlignment="Center"
+                        Background="#F8FAFC"
+                        BorderBrush="{StaticResource WorkspaceBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Drawing standard"
+                                   FontSize="10"
+                                   Foreground="{StaticResource WorkspaceMutedBrush}"/>
+                        <Border Width="1"
+                                Height="13"
+                                Margin="9,0"
+                                Background="#CBD5E1"/>
+                        <TextBlock x:Name="StandardizationStatusText"
+                                   FontSize="10"
+                                   FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Border Grid.Row="2"
+                    Background="White"
+                    BorderBrush="{StaticResource WorkspaceBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="9">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="78"/>
+                        <RowDefinition Height="1"/>
+                        <RowDefinition Height="86"/>
+                        <RowDefinition Height="1"/>
+                        <RowDefinition Height="76"/>
+                        <RowDefinition Height="1"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Model selection -->
+                    <Grid Grid.Row="0" Margin="20,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="MODEL SELECTION"
+                                       Margin="0,0,0,5"
+                                       FontSize="9"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource PrimaryBrush}"/>
+                            <TextBlock x:Name="SelectionTitleText"
+                                       Text="No parts loaded"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource WorkspaceHeadingBrush}"/>
+                            <TextBlock x:Name="SelectionDetailText"
+                                       Text="Select parts in Tekla Structures to begin."
+                                       Margin="0,3,0,0"
+                                       FontSize="10"
+                                       Foreground="{StaticResource WorkspaceMutedBrush}"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button x:Name="SelectPartsButton"
+                                    Width="124"
+                                    Height="36"
+                                    Margin="0,0,9,0"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Content="Select Parts"
+                                    Click="SelectParts_Click"/>
+                            <Button x:Name="DryRunButton"
+                                    Width="132"
+                                    Height="36"
+                                    IsEnabled="False"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    Content="Run Dry Check"
+                                    Click="RunDryCheck_Click"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Border Grid.Row="1" Background="{StaticResource WorkspaceBorderBrush}"/>
+
+                    <!-- Dry-check summary -->
+                    <Grid Grid.Row="2" Margin="20,13">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="130"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="Dry-check summary"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource WorkspaceHeadingBrush}"/>
+                            <TextBlock Text="Current selection"
+                                       Margin="0,3,0,0"
+                                       FontSize="10"
+                                       Foreground="{StaticResource WorkspaceMutedBrush}"/>
+                        </StackPanel>
+
+                        <Border Grid.Column="1"
+                                Padding="13,9"
+                                Background="#FAFBFC"
+                                BorderBrush="{StaticResource WorkspaceBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="READY" Style="{StaticResource MetricLabelStyle}" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="ReadyCountText"
+                                           Grid.Column="1"
+                                           Text="-"
+                                           Foreground="{StaticResource PrimaryBrush}"
+                                           Style="{StaticResource MetricValueStyle}"/>
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Column="3"
+                                Padding="13,9"
+                                Background="#FAFBFC"
+                                BorderBrush="{StaticResource WorkspaceBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="EXISTING" Style="{StaticResource MetricLabelStyle}" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="ExistingCountText"
+                                           Grid.Column="1"
+                                           Text="-"
+                                           Foreground="{StaticResource WorkspaceHeadingBrush}"
+                                           Style="{StaticResource MetricValueStyle}"/>
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Column="5"
+                                Padding="13,9"
+                                Background="#FAFBFC"
+                                BorderBrush="{StaticResource WorkspaceBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="REVIEW" Style="{StaticResource MetricLabelStyle}" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="ReviewCountText"
+                                           Grid.Column="1"
+                                           Text="-"
+                                           Foreground="{StaticResource WorkspaceHeadingBrush}"
+                                           Style="{StaticResource MetricValueStyle}"/>
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Column="7"
+                                Padding="13,9"
+                                Background="#FAFBFC"
+                                BorderBrush="{StaticResource WorkspaceBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="FAILED" Style="{StaticResource MetricLabelStyle}" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="FailedCountText"
+                                           Grid.Column="1"
+                                           Text="-"
+                                           Foreground="{StaticResource WorkspaceHeadingBrush}"
+                                           Style="{StaticResource MetricValueStyle}"/>
+                            </Grid>
+                        </Border>
+                    </Grid>
+
+                    <Border Grid.Row="3" Background="{StaticResource WorkspaceBorderBrush}"/>
+
+                    <!-- Filters and drawing actions -->
+                    <Grid Grid.Row="4" Margin="20,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="154"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="220"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="64"/>
+                            <ColumnDefinition Width="9"/>
+                            <ColumnDefinition Width="112"/>
+                            <ColumnDefinition Width="9"/>
+                            <ColumnDefinition Width="142"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="STATUS" Style="{StaticResource ToolbarLabelStyle}"/>
+                            <ComboBox x:Name="StatusFilterComboBox"
+                                      SelectedIndex="0"
+                                      Style="{StaticResource WorkspaceComboBoxStyle}"
+                                      SelectionChanged="StatusFilter_Changed">
+                                <ComboBoxItem Content="All Status"/>
+                                <ComboBoxItem Content="ReadyToCreate"/>
+                                <ComboBoxItem Content="Existing"/>
+                                <ComboBoxItem Content="NeedReview"/>
+                                <ComboBoxItem Content="Failed"/>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="SEARCH DRAWINGS" Style="{StaticResource ToolbarLabelStyle}"/>
+                            <TextBox x:Name="GridSearchTextBox"
+                                     Style="{StaticResource WorkspaceTextBoxStyle}"
+                                     TextChanged="SearchText_Changed"
+                                     ToolTip="Search piece mark, profile, material, status, or message"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="4">
+                            <TextBlock Text="BATCH" Style="{StaticResource ToolbarLabelStyle}"/>
+                            <ComboBox x:Name="BatchSizeComboBox"
+                                      SelectedIndex="1"
+                                      Style="{StaticResource WorkspaceComboBoxStyle}">
+                                <ComboBoxItem Content="1"/>
+                                <ComboBoxItem Content="3"/>
+                                <ComboBoxItem Content="5"/>
+                                <ComboBoxItem Content="10"/>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <Button x:Name="SelectBatchButton"
+                                Grid.Column="6"
+                                Height="36"
+                                VerticalAlignment="Bottom"
+                                IsEnabled="False"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Content="Select Ready"
+                                Click="SelectReadyDrawings_Click"/>
+
+                        <Button x:Name="CreateDrawingsButton"
+                                Grid.Column="8"
+                                Height="36"
+                                VerticalAlignment="Bottom"
+                                IsEnabled="False"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Content="Create Drawings"
+                                Click="CreateDrawings_Click"/>
+                    </Grid>
+
+                    <Border Grid.Row="5" Background="{StaticResource WorkspaceBorderBrush}"/>
+
+                    <!-- Drawing candidates -->
+                    <DataGrid x:Name="CandidateDataGrid"
+                              Grid.Row="6"
+                              AlternationCount="2"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              CanUserResizeRows="False"
+                              GridLinesVisibility="None"
+                              HeadersVisibility="Column"
+                              IsReadOnly="True"
+                              SelectionMode="Extended"
+                              SelectionUnit="FullRow"
+                              BorderThickness="0"
+                              Background="White"
+                              RowHeaderWidth="0"
+                              ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                              ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="PIECE MARK" Binding="{Binding Candidate.PieceMark}" Width="108"/>
+                            <DataGridTextColumn Header="PROFILE" Binding="{Binding Candidate.Profile}" Width="125"/>
+                            <DataGridTextColumn Header="MATERIAL" Binding="{Binding Candidate.Material}" Width="102"/>
+                            <DataGridTextColumn Header="TYPE" Binding="{Binding Candidate.MaterialType}" Width="90"/>
+                            <DataGridTextColumn Header="QTY" Binding="{Binding Candidate.PartCount}" Width="56"/>
+                            <DataGridTextColumn Header="STATUS" Binding="{Binding Status}" Width="116"/>
+                            <DataGridTextColumn Header="STANDARDIZATION" Binding="{Binding StandardizationDisplay}" Width="140"/>
+                            <DataGridTextColumn Header="MESSAGE" Binding="{Binding Message}" Width="*" MinWidth="180"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

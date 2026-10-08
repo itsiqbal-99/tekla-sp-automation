@@ -1,0 +1,120 @@
+<UserControl x:Class="SinglePartAutoFix.Wpf.Views.TeklaConnectionView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource AppBackgroundBrush}"
+             FontFamily="Segoe UI">
+    <Grid>
+        <Border Width="540"
+                Padding="42"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Background="White"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="10">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="24" ShadowDepth="4" Opacity="0.09" Color="#0F172A"/>
+            </Border.Effect>
+
+            <StackPanel>
+                <TextBlock Text="SINGLE PART AUTOMATION"
+                           FontSize="11"
+                           FontWeight="Bold"
+                           Foreground="{StaticResource PrimaryBrush}"/>
+                <TextBlock Text="Connect to Tekla Structures"
+                           Margin="0,12,0,0"
+                           FontSize="27"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                <TextBlock Text="A connected Tekla model is required before you can sign in."
+                           Margin="0,8,0,0"
+                           FontSize="13"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           TextWrapping="Wrap"/>
+
+                <Border Margin="0,28,0,0"
+                        Padding="18"
+                        Background="#F8FAFC"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Border x:Name="StatusIconBorder"
+                                Width="38"
+                                Height="38"
+                                Background="#DBEAFE"
+                                CornerRadius="19">
+                            <TextBlock x:Name="StatusIconText"
+                                       Text="..."
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       FontSize="18"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource PrimaryBrush}"/>
+                        </Border>
+                        <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
+                            <TextBlock x:Name="StatusTitleText"
+                                       Text="Checking connection"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimaryBrush}"/>
+                            <TextBlock x:Name="StatusMessageText"
+                                       Text="Looking for an active Tekla Structures model."
+                                       Margin="0,3,0,0"
+                                       FontSize="12"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <ProgressBar x:Name="CheckingProgressBar"
+                             Height="5"
+                             Margin="0,16,0,0"
+                             Foreground="{StaticResource PrimaryBrush}"
+                             Background="#E4EAFF"
+                             IsIndeterminate="True"/>
+
+                <TextBlock x:Name="CheckingHintText"
+                           Text="Verifying Tekla session and active model..."
+                           Margin="0,9,0,0"
+                           HorizontalAlignment="Center"
+                           FontSize="11"
+                           Foreground="{StaticResource TextSecondaryBrush}"/>
+
+                <StackPanel x:Name="InstructionsPanel" Margin="0,22,0,0" Visibility="Collapsed">
+                    <TextBlock Text="Before retrying:"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}"/>
+                    <TextBlock Text="1. Open Tekla Structures.&#x0a;2. Open the model you want to process.&#x0a;3. Return here and retry the connection."
+                               Margin="0,8,0,0"
+                               FontSize="12"
+                               LineHeight="21"
+                               Foreground="{StaticResource TextSecondaryBrush}"/>
+                </StackPanel>
+
+                <StackPanel Margin="0,28,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button x:Name="CloseButton"
+                            Content="Close Application"
+                            Width="138"
+                            Height="40"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Click="CloseButton_Click"/>
+                    <Button x:Name="RetryButton"
+                            Content="Retry Connection"
+                            Width="145"
+                            Height="40"
+                            Margin="10,0,0,0"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Visibility="Collapsed"
+                            Click="RetryButton_Click"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>
