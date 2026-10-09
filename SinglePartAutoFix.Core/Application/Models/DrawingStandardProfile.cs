@@ -7,10 +7,19 @@ namespace SinglePartAutoFix.Application.Models
         public string Id { get; set; }
         public string Name { get; set; }
         public string DrawingAttributeName { get; set; }
+        public string RequiredAttributeFileName { get; set; }
         public string Version { get; set; }
         public bool IsEnabled { get; set; }
+        public double? ExpectedViewScale { get; set; }
 
-        public DrawingStandardProfile(string id, string name, string drawingAttributeName, string version, bool isEnabled)
+        public DrawingStandardProfile(
+            string id,
+            string name,
+            string drawingAttributeName,
+            string version,
+            bool isEnabled,
+            string requiredAttributeFileName = null,
+            double? expectedViewScale = null)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -36,10 +45,14 @@ namespace SinglePartAutoFix.Application.Models
             Id = id;
             Name = name;
             DrawingAttributeName = drawingAttributeName;
+            RequiredAttributeFileName = string.IsNullOrWhiteSpace(requiredAttributeFileName)
+                ? drawingAttributeName + ".wd"
+                : requiredAttributeFileName;
             Version = string.IsNullOrWhiteSpace(version)
                 ? "1.0"
                 : version;
             IsEnabled = isEnabled;
+            ExpectedViewScale = expectedViewScale;
         }
     }
 }

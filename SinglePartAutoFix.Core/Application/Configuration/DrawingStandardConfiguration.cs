@@ -14,7 +14,9 @@ namespace SinglePartAutoFix.Application.Configuration
                 name: "Single Part Test Standard",
                 drawingAttributeName: "SP_TEST_STANDARD",
                 version: "1.0",
-                isEnabled: true)
+                isEnabled: true,
+                requiredAttributeFileName: "SP_TEST_STANDARD.wd",
+                expectedViewScale: 5.0)
             };
 
             //return new List<DrawingStandardProfile>();

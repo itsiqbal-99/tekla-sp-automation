@@ -4,7 +4,9 @@ namespace SinglePartAutoFix.src.Application.Interfaces
 {
     public interface IDrawingChecker
     {
-        bool Exists(DrawingCandidate candidate);
-        void MarkAsExisting(string piecemark);
+        SinglePartAutoFix.Application.Models.DrawingLookupResult Find(
+            DrawingCandidate candidate,
+            bool forceRefresh = false);
+        void Refresh();
     }
 }

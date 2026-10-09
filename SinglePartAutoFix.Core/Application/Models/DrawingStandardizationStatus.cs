@@ -9,7 +9,11 @@ namespace SinglePartAutoFix.Application.Models
     public enum DrawingStandardizationStatus
     {
         NotConfigured,
-        Applied,
-        Failed
+        PendingCreation,
+        SettingsRequested,
+        Verified,
+        NeedReview,
+        Failed,
+        NotApplicable
     }
 }

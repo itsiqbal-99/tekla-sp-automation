@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.37710.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SinglePartAutoFix", "SinglePartAutoFix\SinglePartAutoFix.csproj", "{445F73A1-A5F2-4BDD-9192-5E3F8C85277F}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SinglePartAutoFix.Wpf", "SinglePartAutoFix.Wpf\SinglePartAutoFix.Wpf.csproj", "{499B436C-B123-4ED9-BFE8-BF37D3A5FDFB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SinglePartAutoFix.Core", "SinglePartAutoFix.Core\SinglePartAutoFix.Core.csproj", "{0165525B-6106-456E-95A6-5A9122574B23}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SinglePartAutoFix.Core.Tests", "SinglePartAutoFix.Core.Tests\SinglePartAutoFix.Core.Tests.csproj", "{91C41661-99E2-43CF-8B16-094A5D12A135}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,30 +19,30 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{445F73A1-A5F2-4BDD-9192-5E3F8C85277F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{445F73A1-A5F2-4BDD-9192-5E3F8C85277F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{445F73A1-A5F2-4BDD-9192-5E3F8C85277F}.Debug|x64.ActiveCfg = Debug|x64
-		{445F73A1-A5F2-4BDD-9192-5E3F8C85277F}.Debug|x64.Build.0 = Debug|x64
-		{445F73A1-A5F2-4BDD-9192-5E3F8C85277F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{445F73A1-A5F2-4BDD-9192-5E3F8C85277F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{445F73A1-A5F2-4BDD-9192-5E3F8C85277F}.Release|x64.ActiveCfg = Release|x64
-		{445F73A1-A5F2-4BDD-9192-5E3F8C85277F}.Release|x64.Build.0 = Release|x64
 		{499B436C-B123-4ED9-BFE8-BF37D3A5FDFB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{499B436C-B123-4ED9-BFE8-BF37D3A5FDFB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{499B436C-B123-4ED9-BFE8-BF37D3A5FDFB}.Debug|x64.ActiveCfg = Debug|x64
 		{499B436C-B123-4ED9-BFE8-BF37D3A5FDFB}.Debug|x64.Build.0 = Debug|x64
 		{499B436C-B123-4ED9-BFE8-BF37D3A5FDFB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{499B436C-B123-4ED9-BFE8-BF37D3A5FDFB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{499B436C-B123-4ED9-BFE8-BF37D3A5FDFB}.Release|x64.ActiveCfg = Release|Any CPU
-		{499B436C-B123-4ED9-BFE8-BF37D3A5FDFB}.Release|x64.Build.0 = Release|Any CPU
+		{499B436C-B123-4ED9-BFE8-BF37D3A5FDFB}.Release|x64.ActiveCfg = Release|x64
+		{499B436C-B123-4ED9-BFE8-BF37D3A5FDFB}.Release|x64.Build.0 = Release|x64
 		{0165525B-6106-456E-95A6-5A9122574B23}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0165525B-6106-456E-95A6-5A9122574B23}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0165525B-6106-456E-95A6-5A9122574B23}.Debug|x64.ActiveCfg = Debug|x64
 		{0165525B-6106-456E-95A6-5A9122574B23}.Debug|x64.Build.0 = Debug|x64
 		{0165525B-6106-456E-95A6-5A9122574B23}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0165525B-6106-456E-95A6-5A9122574B23}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0165525B-6106-456E-95A6-5A9122574B23}.Release|x64.ActiveCfg = Release|Any CPU
-		{0165525B-6106-456E-95A6-5A9122574B23}.Release|x64.Build.0 = Release|Any CPU
+		{0165525B-6106-456E-95A6-5A9122574B23}.Release|x64.ActiveCfg = Release|x64
+		{0165525B-6106-456E-95A6-5A9122574B23}.Release|x64.Build.0 = Release|x64
+		{91C41661-99E2-43CF-8B16-094A5D12A135}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{91C41661-99E2-43CF-8B16-094A5D12A135}.Debug|Any CPU.Build.0 = Debug|x64
+		{91C41661-99E2-43CF-8B16-094A5D12A135}.Debug|x64.ActiveCfg = Debug|x64
+		{91C41661-99E2-43CF-8B16-094A5D12A135}.Debug|x64.Build.0 = Debug|x64
+		{91C41661-99E2-43CF-8B16-094A5D12A135}.Release|Any CPU.ActiveCfg = Release|x64
+		{91C41661-99E2-43CF-8B16-094A5D12A135}.Release|Any CPU.Build.0 = Release|x64
+		{91C41661-99E2-43CF-8B16-094A5D12A135}.Release|x64.ActiveCfg = Release|x64
+		{91C41661-99E2-43CF-8B16-094A5D12A135}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

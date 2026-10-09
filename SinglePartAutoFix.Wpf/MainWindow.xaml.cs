@@ -9,8 +9,6 @@ namespace SinglePartAutoFix.Wpf
 {
     public partial class MainWindow : Window
     {
-        private const int MinimumConnectionCheckMilliseconds = 3000;
-
         private readonly ILoginService _loginService;
         private readonly string _demoUsername;
         private readonly string _demoPassword;
@@ -27,10 +25,10 @@ namespace SinglePartAutoFix.Wpf
         {
             InitializeComponent();
 
-            var demoLoginService = new DemoLoginService();
-            _loginService = demoLoginService;
-            _demoUsername = demoLoginService.Username;
-            _demoPassword = demoLoginService.Password;
+            _loginService = LoginServiceFactory.Create();
+            var demoLoginService = _loginService as DemoLoginService;
+            _demoUsername = demoLoginService?.Username ?? string.Empty;
+            _demoPassword = demoLoginService?.Password ?? string.Empty;
 
             _teklaSession = new TeklaModelSession();
             _connectionView = new TeklaConnectionView();
@@ -38,6 +36,7 @@ namespace SinglePartAutoFix.Wpf
             _connectionView.CloseClicked += (sender, args) => Close();
 
             Loaded += MainWindow_Loaded;
+            Closed += (sender, args) => (_loginService as IDisposable)?.Dispose();
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -57,8 +56,6 @@ namespace SinglePartAutoFix.Wpf
             MainContent.Content = _connectionView;
             _connectionView.ShowChecking();
 
-            var minimumDisplayTime = Task.Delay(MinimumConnectionCheckMilliseconds);
-
             try
             {
                 // A fresh Tekla Model object is required when Tekla was opened
@@ -69,8 +66,10 @@ namespace SinglePartAutoFix.Wpf
                     : _teklaSession;
 
                 var checkTask = Task.Run(() => CheckSession(sessionToCheck));
-                await Task.WhenAll(checkTask, minimumDisplayTime);
 
+                // Keep the animated connection screen visible long enough to be
+                // readable without delaying the Tekla check itself.
+                await Task.WhenAll(checkTask, Task.Delay(2500));
                 var result = checkTask.Result;
                 if (!result.IsConnected)
                 {
@@ -94,7 +93,6 @@ namespace SinglePartAutoFix.Wpf
             }
             catch
             {
-                await minimumDisplayTime;
                 ClearModelInformation();
                 _connectionView.ShowConnectionError(
                     "Tekla Structures could not be reached. Open Tekla, load a model, then try again.");
@@ -133,7 +131,11 @@ namespace SinglePartAutoFix.Wpf
 
         private void ShowLogin()
         {
-            var loginView = new LoginView(_modelName, _demoUsername, _demoPassword);
+            var loginView = new LoginView(
+                _modelName,
+                _demoUsername,
+                _demoPassword,
+                _loginService is DemoLoginService);
             loginView.SignInSubmitted += SignInSubmitted;
             MainContent.Content = loginView;
         }
@@ -188,7 +190,11 @@ namespace SinglePartAutoFix.Wpf
 
         private void ShowWorkspace()
         {
-            var workspace = new DrawingWorkspaceView(_teklaSession, _displayName, _modelPath);
+            var workspace = new DrawingWorkspaceView(
+                _teklaSession,
+                _displayName,
+                _modelPath,
+                () => _isSignedIn && _loginService.IsAuthenticated);
             workspace.LogoutClicked += LogoutClicked;
             workspace.TeklaConnectionLost += TeklaConnectionLost;
             MainContent.Content = workspace;

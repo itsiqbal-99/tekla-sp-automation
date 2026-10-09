@@ -201,6 +201,11 @@
                                Margin="0,4,0,0"
                                FontSize="11"
                                Foreground="{StaticResource WorkspaceMutedBrush}"/>
+                    <TextBlock x:Name="PreflightStatusText"
+                               Margin="0,4,0,0"
+                               FontSize="10"
+                               TextTrimming="CharacterEllipsis"
+                               Foreground="{StaticResource WorkspaceMutedBrush}"/>
                 </StackPanel>
 
                 <Border Grid.Column="1"
@@ -237,6 +242,8 @@
                         <RowDefinition Height="86"/>
                         <RowDefinition Height="1"/>
                         <RowDefinition Height="76"/>
+                        <RowDefinition Height="1"/>
+                        <RowDefinition Height="58"/>
                         <RowDefinition Height="1"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
@@ -396,9 +403,11 @@
                     <!-- Filters and drawing actions -->
                     <Grid Grid.Row="4" Margin="20,8">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="154"/>
+                            <ColumnDefinition Width="138"/>
                             <ColumnDefinition Width="10"/>
-                            <ColumnDefinition Width="220"/>
+                            <ColumnDefinition Width="190"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="145"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="64"/>
                             <ColumnDefinition Width="9"/>
@@ -418,6 +427,7 @@
                                 <ComboBoxItem Content="Existing"/>
                                 <ComboBoxItem Content="NeedReview"/>
                                 <ComboBoxItem Content="Failed"/>
+                                <ComboBoxItem Content="Cancelled"/>
                             </ComboBox>
                         </StackPanel>
 
@@ -430,6 +440,19 @@
                         </StackPanel>
 
                         <StackPanel Grid.Column="4">
+                            <TextBlock Text="DRAWING STATE" Style="{StaticResource ToolbarLabelStyle}"/>
+                            <ComboBox x:Name="DrawingStateFilterComboBox"
+                                      SelectedIndex="0"
+                                      Style="{StaticResource WorkspaceComboBoxStyle}"
+                                      SelectionChanged="DrawingStateFilter_Changed">
+                                <ComboBoxItem Content="All Drawings"/>
+                                <ComboBoxItem Content="Up to date"/>
+                                <ComboBoxItem Content="Needs attention"/>
+                                <ComboBoxItem Content="Verified"/>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="6">
                             <TextBlock Text="BATCH" Style="{StaticResource ToolbarLabelStyle}"/>
                             <ComboBox x:Name="BatchSizeComboBox"
                                       SelectedIndex="1"
@@ -442,7 +465,7 @@
                         </StackPanel>
 
                         <Button x:Name="SelectBatchButton"
-                                Grid.Column="6"
+                                Grid.Column="8"
                                 Height="36"
                                 VerticalAlignment="Bottom"
                                 IsEnabled="False"
@@ -451,7 +474,7 @@
                                 Click="SelectReadyDrawings_Click"/>
 
                         <Button x:Name="CreateDrawingsButton"
-                                Grid.Column="8"
+                                Grid.Column="10"
                                 Height="36"
                                 VerticalAlignment="Bottom"
                                 IsEnabled="False"
@@ -462,9 +485,58 @@
 
                     <Border Grid.Row="5" Background="{StaticResource WorkspaceBorderBrush}"/>
 
+                    <!-- Selected candidate details and Tekla navigation -->
+                    <Grid Grid.Row="6" Margin="20,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock x:Name="SelectedDetailTitleText"
+                                       Text="Select a candidate to view details"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource WorkspaceHeadingBrush}"/>
+                            <TextBlock x:Name="SelectedDetailText"
+                                       Text="Drawing state, verification, and suggested actions appear here."
+                                       Margin="0,3,12,0"
+                                       FontSize="10"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="{StaticResource WorkspaceMutedBrush}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button x:Name="RefreshDrawingsButton"
+                                    Width="82" Height="34" Margin="0,0,8,0"
+                                    IsEnabled="False"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Content="Refresh"
+                                    Click="RefreshDrawings_Click"/>
+                            <Button x:Name="FocusInModelButton"
+                                    Width="108" Height="34" Margin="0,0,8,0"
+                                    IsEnabled="False"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Content="Focus in Model"
+                                    Click="FocusInModel_Click"/>
+                            <Button x:Name="OpenDrawingButton"
+                                    Width="104" Height="34" Margin="0,0,8,0"
+                                    IsEnabled="False"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Content="Open Drawing"
+                                    Click="OpenDrawing_Click"/>
+                            <Button x:Name="CancelBatchButton"
+                                    Width="102" Height="34"
+                                    Visibility="Collapsed"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Content="Cancel Batch"
+                                    Click="CancelBatch_Click"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Border Grid.Row="7" Background="{StaticResource WorkspaceBorderBrush}"/>
+
                     <!-- Drawing candidates -->
                     <DataGrid x:Name="CandidateDataGrid"
-                              Grid.Row="6"
+                              Grid.Row="8"
                               AlternationCount="2"
                               AutoGenerateColumns="False"
                               CanUserAddRows="False"
@@ -475,19 +547,22 @@
                               IsReadOnly="True"
                               SelectionMode="Extended"
                               SelectionUnit="FullRow"
+                              SelectionChanged="CandidateDataGrid_SelectionChanged"
                               BorderThickness="0"
                               Background="White"
                               RowHeaderWidth="0"
                               ScrollViewer.HorizontalScrollBarVisibility="Auto"
                               ScrollViewer.VerticalScrollBarVisibility="Auto">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="PIECE MARK" Binding="{Binding Candidate.PieceMark}" Width="108"/>
-                            <DataGridTextColumn Header="PROFILE" Binding="{Binding Candidate.Profile}" Width="125"/>
-                            <DataGridTextColumn Header="MATERIAL" Binding="{Binding Candidate.Material}" Width="102"/>
-                            <DataGridTextColumn Header="TYPE" Binding="{Binding Candidate.MaterialType}" Width="90"/>
+                            <DataGridTextColumn Header="PIECE MARK" Binding="{Binding Candidate.PieceMarkDisplay}" Width="135"/>
+                            <DataGridTextColumn Header="PROFILE" Binding="{Binding Candidate.Profile}" Width="110"/>
+                            <DataGridTextColumn Header="MATERIAL" Binding="{Binding Candidate.Material}" Width="90"/>
+                            <DataGridTextColumn Header="TYPE" Binding="{Binding Candidate.MaterialType}" Width="82"/>
                             <DataGridTextColumn Header="QTY" Binding="{Binding Candidate.PartCount}" Width="56"/>
-                            <DataGridTextColumn Header="STATUS" Binding="{Binding Status}" Width="116"/>
-                            <DataGridTextColumn Header="STANDARDIZATION" Binding="{Binding StandardizationDisplay}" Width="140"/>
+                            <DataGridTextColumn Header="STATUS" Binding="{Binding Status}" Width="105"/>
+                            <DataGridTextColumn Header="DRAWING STATE" Binding="{Binding DrawingStateDisplay}" Width="150"/>
+                            <DataGridTextColumn Header="VERIFICATION" Binding="{Binding StandardizationDisplay}" Width="122"/>
+                            <DataGridTextColumn Header="SCALE" Binding="{Binding DrawingScaleDisplay}" Width="90"/>
                             <DataGridTextColumn Header="MESSAGE" Binding="{Binding Message}" Width="*" MinWidth="180"/>
                         </DataGrid.Columns>
                     </DataGrid>

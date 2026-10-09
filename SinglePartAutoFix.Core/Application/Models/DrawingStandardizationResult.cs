@@ -23,14 +23,36 @@ namespace SinglePartAutoFix.Application.Models
             return new DrawingStandardizationResult(DrawingStandardizationStatus.NotConfigured, "Engineering Drawing standardization is not configured.");
         }
 
-        public static DrawingStandardizationResult Applied(string message)
+        public static DrawingStandardizationResult PendingCreation()
         {
-            return new DrawingStandardizationResult(DrawingStandardizationStatus.Applied, message);
+            return new DrawingStandardizationResult(
+                DrawingStandardizationStatus.PendingCreation,
+                "Drawing standard verification will run after creation.");
+        }
+
+        public static DrawingStandardizationResult SettingsRequested(string message)
+        {
+            return new DrawingStandardizationResult(DrawingStandardizationStatus.SettingsRequested, message);
+        }
+
+        public static DrawingStandardizationResult Verified(string message)
+        {
+            return new DrawingStandardizationResult(DrawingStandardizationStatus.Verified, message);
+        }
+
+        public static DrawingStandardizationResult NeedReview(string message)
+        {
+            return new DrawingStandardizationResult(DrawingStandardizationStatus.NeedReview, message);
         }
 
         public static DrawingStandardizationResult Failed(string message)
         {
             return new DrawingStandardizationResult(DrawingStandardizationStatus.Failed, message);
+        }
+
+        public static DrawingStandardizationResult NotApplicable(string message)
+        {
+            return new DrawingStandardizationResult(DrawingStandardizationStatus.NotApplicable, message);
         }
     }
 }

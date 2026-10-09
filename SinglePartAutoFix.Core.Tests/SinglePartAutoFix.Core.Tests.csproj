@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
+    <ProjectGuid>{91C41661-99E2-43CF-8B16-094A5D12A135}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>SinglePartAutoFix.Core.Tests</RootNamespace>
+    <AssemblyName>SinglePartAutoFix.Core.Tests</AssemblyName>
+    <TargetFrameworkVersion>v4.8.1</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SinglePartAutoFix.Core\SinglePartAutoFix.Core.csproj">
+      <Project>{0165525B-6106-456E-95A6-5A9122574B23}</Project>
+      <Name>SinglePartAutoFix.Core</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

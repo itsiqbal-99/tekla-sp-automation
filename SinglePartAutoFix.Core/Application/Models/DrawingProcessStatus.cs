@@ -12,6 +12,7 @@ namespace SinglePartAutoFix.Application.Models
         Existing,
         Created,
         Failed,
-        NeedReview
+        NeedReview,
+        Cancelled
     }
 }

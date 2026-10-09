@@ -2,7 +2,7 @@
 
 namespace SinglePartAutoFix.Infrastructure.Tekla
 {
-    public class TeklaModelSession : ITeklaModelSession
+    public class TeklaModelSession
     {
         private readonly Model _model;
 

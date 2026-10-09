@@ -16,6 +16,7 @@ namespace SinglePartAutoFix.Wpf.Authentication
         public string Username { get; }
         public string Password { get; }
         public string DisplayName { get; }
+        public bool IsAuthenticated { get; private set; }
 
         public Task<LoginResult> SignInAsync(LoginRequest request)
         {
@@ -30,6 +31,7 @@ namespace SinglePartAutoFix.Wpf.Authentication
                 string.Equals(request.Username.Trim(), Username, StringComparison.Ordinal) &&
                 string.Equals(request.Password, Password, StringComparison.Ordinal);
 
+            IsAuthenticated = credentialsMatch;
             return Task.FromResult(credentialsMatch
                 ? LoginResult.Success(DisplayName)
                 : LoginResult.Failure("The username or password is incorrect."));

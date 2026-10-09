@@ -1,18 +1,21 @@
-﻿using SinglePartAutoFix.Application.Interfaces;
 using SinglePartAutoFix.Application.Models;
-using SinglePartAutoFix.src.Application.Interfaces;
+using SinglePartAutoFix.Core.Infrastructure.Tekla;
 using System;
 
 namespace SinglePartAutoFix.Infrastructure.Tekla
 {
-    public class TeklaDrawingStandardConfigurationValidator : IDrawingStandardConfigurationValidator
+    public class TeklaDrawingStandardConfigurationValidator
     {
         private readonly TeklaModelSession _tekla;
-        private readonly IDrawingStandardConfigurationResolver _configurationResolver;
-        public TeklaDrawingStandardConfigurationValidator(TeklaModelSession tekla, IDrawingStandardConfigurationResolver configurationResolver)
+        private readonly TeklaDrawingStandardConfigurationResolver _configurationResolver;
+
+        public TeklaDrawingStandardConfigurationValidator(
+            TeklaModelSession tekla,
+            TeklaDrawingStandardConfigurationResolver configurationResolver)
         {
             _tekla = tekla ?? throw new ArgumentNullException(nameof(tekla));
-            _configurationResolver = configurationResolver ?? throw new ArgumentNullException(nameof(configurationResolver));
+            _configurationResolver = configurationResolver ??
+                throw new ArgumentNullException(nameof(configurationResolver));
         }
 
         public DrawingStandardValidationResult Validate(DrawingStandardProfile profile)
@@ -42,22 +45,22 @@ namespace SinglePartAutoFix.Infrastructure.Tekla
             {
                 return DrawingStandardValidationResult.Create(
                     DrawingStandardValidationStatus.ConfigurationMissing,
-                    "Drawing attribute name is not configured"
-                    );
-
+                    "Drawing attribute name is not configured.");
             }
 
-            if (!_configurationResolver.CanResolve(profile))
+            string resolvedPath;
+            string errorMessage;
+            if (!_configurationResolver.TryResolve(profile, out resolvedPath, out errorMessage))
             {
                 return DrawingStandardValidationResult.Create(
                     DrawingStandardValidationStatus.ConfigurationMissing,
-                    "Tekla drawing configuration could not be resolved"
-                    );
+                    errorMessage);
             }
 
             return DrawingStandardValidationResult.Create(
                 DrawingStandardValidationStatus.Ready,
-                "Drawing standard profile is ready.");
+                $"Drawing standard profile '{profile.Name}' v{profile.Version} is ready.",
+                resolvedPath);
         }
     }
 }

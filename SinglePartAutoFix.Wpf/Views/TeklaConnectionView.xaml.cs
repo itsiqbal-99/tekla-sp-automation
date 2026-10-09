@@ -2,24 +2,14 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Threading;
 
 namespace SinglePartAutoFix.Wpf.Views
 {
     public partial class TeklaConnectionView : UserControl
     {
-        private readonly DispatcherTimer _checkingAnimationTimer;
-        private int _checkingDotCount;
-
         public TeklaConnectionView()
         {
             InitializeComponent();
-            _checkingAnimationTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(350)
-            };
-            _checkingAnimationTimer.Tick += CheckingAnimationTimer_Tick;
-            Unloaded += (sender, args) => _checkingAnimationTimer.Stop();
             ShowChecking();
         }
 
@@ -28,8 +18,7 @@ namespace SinglePartAutoFix.Wpf.Views
 
         public void ShowChecking()
         {
-            _checkingDotCount = 1;
-            StatusIconText.Text = ".";
+            StatusIconText.Text = "…";
             StatusIconBorder.Background = new SolidColorBrush(Color.FromRgb(219, 234, 254));
             StatusIconText.Foreground = (Brush)FindResource("PrimaryBrush");
             StatusTitleText.Text = "Checking connection";
@@ -39,13 +28,10 @@ namespace SinglePartAutoFix.Wpf.Views
             InstructionsPanel.Visibility = Visibility.Collapsed;
             RetryButton.Visibility = Visibility.Collapsed;
             CloseButton.IsEnabled = false;
-            _checkingAnimationTimer.Stop();
-            _checkingAnimationTimer.Start();
         }
 
         public void ShowConnectionError(string message)
         {
-            _checkingAnimationTimer.Stop();
             StatusIconText.Text = "!";
             StatusIconBorder.Background = new SolidColorBrush(Color.FromRgb(254, 243, 199));
             StatusIconText.Foreground = (Brush)FindResource("WarningBrush");
@@ -58,12 +44,6 @@ namespace SinglePartAutoFix.Wpf.Views
             InstructionsPanel.Visibility = Visibility.Visible;
             RetryButton.Visibility = Visibility.Visible;
             CloseButton.IsEnabled = true;
-        }
-
-        private void CheckingAnimationTimer_Tick(object sender, EventArgs e)
-        {
-            _checkingDotCount = _checkingDotCount % 3 + 1;
-            StatusIconText.Text = new string('.', _checkingDotCount);
         }
 
         private void RetryButton_Click(object sender, RoutedEventArgs e)

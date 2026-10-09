@@ -1,19 +1,14 @@
-﻿using SinglePartAutoFix.Domain.Models;
-using SinglePartAutoFix.Application.Interfaces;
-using Tekla.Structures.Model;
-using System.Collections.Generic;
-using System;
-using System.Collections;
-using Tekla.Structures.Model.Operations;
 using SinglePartAutoFix.Application.Models;
-
-using TeklaModelObjectSelector = Tekla.Structures.Model.ModelObjectSelector;
-
+using SinglePartAutoFix.Domain.Models;
+using System;
+using System.Collections.Generic;
+using Tekla.Structures.Model;
+using Tekla.Structures.Model.Operations;
 using TeklaUiModelObjectSelector = Tekla.Structures.Model.UI.ModelObjectSelector;
 
 namespace SinglePartAutoFix.Infrastructure.Tekla
 {
-    public class TeklaPartReader : IPartReader
+    public class TeklaPartReader
     {
         private readonly TeklaModelSession _tekla;
 
@@ -28,72 +23,42 @@ namespace SinglePartAutoFix.Infrastructure.Tekla
             {
                 throw new ArgumentNullException(nameof(query));
             }
-            var result = new List<PartInfo>();
 
             if (!_tekla.IsConnected())
             {
-                Console.WriteLine("ERROR DI READONLY");
-                return result;
+                throw new InvalidOperationException(
+                    "Tekla Structures is not connected. Reconnect and select the parts again.");
             }
-
 
             ModelObjectEnumerator objects;
-
-            switch (query.SelectionMode)
+            if (query.SelectionMode == PartSelectionMode.Selected)
             {
-                case PartSelectionMode.Selected:
-
-                    var uiSelector = new TeklaUiModelObjectSelector();
-
-                    objects = uiSelector.GetSelectedObjects();
-
-                    break;
-
-                case PartSelectionMode.All:
-
-                    var modelSelector = _tekla.GetModel().GetModelObjectSelector();
-
-                    objects = modelSelector.GetAllObjectsWithType(
-                            new[] { typeof(Part) }
-                        );
-
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException();
+                objects = new TeklaUiModelObjectSelector().GetSelectedObjects();
+            }
+            else if (query.SelectionMode == PartSelectionMode.All)
+            {
+                objects = _tekla.GetModel()
+                    .GetModelObjectSelector()
+                    .GetAllObjectsWithType(new[] { typeof(Part) });
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException();
             }
 
+            var result = new List<PartInfo>();
             while (objects.MoveNext())
             {
-                if (!(objects.Current is Part part))
+                var part = objects.Current as Part;
+                if (part == null)
+                {
                     continue;
-
-                var names = new ArrayList
-                {
-                    "PART_POS"
-                };
-
-                var values = new Hashtable();
-
-
-                part.GetStringReportProperties(
-                    names,
-                    ref values
-                );
-
-                string pieceMark = "";
-
-                if (values.ContainsKey("PART_POS"))
-                {
-                    pieceMark =
-                        values["PART_POS"]?.ToString() ?? "";
                 }
 
-                string materialType = "";
+                string pieceMark = string.Empty;
+                string materialType = string.Empty;
+                part.GetReportProperty("PART_POS", ref pieceMark);
                 part.GetReportProperty("MATERIAL_TYPE", ref materialType);
-
-                bool numberingUpToDate =
-                    Operation.IsNumberingUpToDate(part);
 
                 result.Add(new PartInfo
                 {
@@ -102,7 +67,7 @@ namespace SinglePartAutoFix.Infrastructure.Tekla
                     Profile = part.Profile.ProfileString,
                     Material = part.Material.MaterialString,
                     MaterialType = materialType,
-                    isNumberingUpToDate = numberingUpToDate,
+                    isNumberingUpToDate = Operation.IsNumberingUpToDate(part)
                 });
             }
 

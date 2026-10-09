@@ -1,15 +1,14 @@
 using SinglePartAutoFix.Application.Configuration;
-using SinglePartAutoFix.Application.Interfaces;
 using SinglePartAutoFix.Application.Models;
 using SinglePartAutoFix.Application.Services;
 using SinglePartAutoFix.Core.Infrastructure.Tekla;
 using SinglePartAutoFix.Domain.Models;
 using SinglePartAutoFix.Infrastructure.Tekla;
-using SinglePartAutoFix.src.Application.Interfaces;
-using SinglePartAutoFix.src.Application.Services;
+using SinglePartAutoFix.Infrastructure.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -22,46 +21,62 @@ namespace SinglePartAutoFix.Wpf.Views
     {
         private readonly TeklaModelSession _teklaSession;
         private readonly string _expectedModelPath;
+        private readonly Func<bool> _isAuthenticated;
         private readonly TeklaPartReader _partReader;
         private readonly DrawingCandidateBuilder _candidateBuilder;
+        private readonly TeklaDrawingChecker _drawingChecker;
         private readonly DrawingProcessor _drawingProcessor;
-        private readonly IDrawingStandardProfileProvider _standardProfileProvider;
-        private readonly IDrawingStandardConfigurationValidator _standardValidator;
+        private readonly DrawingBatchRunner _batchRunner;
+        private readonly TeklaNavigationService _navigationService;
+        private readonly SimpleFileLogger _logger;
+        private readonly IReadOnlyList<DrawingStandardProfile> _standardProfiles;
+        private readonly TeklaDrawingStandardConfigurationValidator _standardValidator;
         private readonly Dictionary<string, DrawingStandardizationResult> _standardizationByPieceMark;
+        private readonly Dictionary<string, DrawingVerificationResult> _verificationByPieceMark;
 
         private List<DrawingCandidate> _candidates;
         private List<DrawingProcessResult> _results;
         private bool _isBusy;
+        private CancellationTokenSource _batchCancellation;
 
-        public DrawingWorkspaceView(TeklaModelSession teklaSession, string displayName, string modelPath)
+        public DrawingWorkspaceView(
+            TeklaModelSession teklaSession,
+            string displayName,
+            string modelPath,
+            Func<bool> isAuthenticated)
         {
             InitializeComponent();
 
             _teklaSession = teklaSession ?? throw new ArgumentNullException(nameof(teklaSession));
             _expectedModelPath = modelPath ?? string.Empty;
+            _isAuthenticated = isAuthenticated ?? throw new ArgumentNullException(nameof(isAuthenticated));
             _partReader = new TeklaPartReader(_teklaSession);
             _candidateBuilder = new DrawingCandidateBuilder();
+            _drawingChecker = new TeklaDrawingChecker(_teklaSession);
             _candidates = new List<DrawingCandidate>();
             _results = new List<DrawingProcessResult>();
             _standardizationByPieceMark = new Dictionary<string, DrawingStandardizationResult>(
                 StringComparer.OrdinalIgnoreCase);
+            _verificationByPieceMark = new Dictionary<string, DrawingVerificationResult>(
+                StringComparer.OrdinalIgnoreCase);
 
-            var profiles = DrawingStandardConfiguration.CreateProfile();
-            _standardProfileProvider = new DrawingStandardProfileProvider(profiles);
+            _standardProfiles = DrawingStandardConfiguration.CreateProfile();
 
             var configurationResolver = new TeklaDrawingStandardConfigurationResolver(_teklaSession);
             _standardValidator = new TeklaDrawingStandardConfigurationValidator(
                 _teklaSession,
                 configurationResolver);
 
-            var activeProfile = _standardProfileProvider.GetProfiles()
+            var activeProfile = _standardProfiles
                 .FirstOrDefault(profile => profile.IsEnabled);
 
             _drawingProcessor = new DrawingProcessor(
-                new TeklaDrawingChecker(_teklaSession),
+                _drawingChecker,
                 new TeklaDrawingCreator(_teklaSession),
-                new NoOpDrawingStandardizer(),
                 activeProfile);
+            _batchRunner = new DrawingBatchRunner(_drawingProcessor);
+            _navigationService = new TeklaNavigationService(_teklaSession);
+            _logger = new SimpleFileLogger();
 
             UserDisplayNameText.Text = string.IsNullOrWhiteSpace(displayName)
                 ? "Signed-in user"
@@ -69,6 +84,7 @@ namespace SinglePartAutoFix.Wpf.Views
 
             UpdateConnectionStatus(true);
             UpdateStandardStatus();
+            UpdatePreflightStatus();
             UpdateActionButtons();
         }
 
@@ -105,7 +121,10 @@ namespace SinglePartAutoFix.Wpf.Views
                 if (IsCurrentModelAvailable())
                 {
                     SelectionTitleText.Text = "Unable to read selected parts";
-                    SelectionDetailText.Text = ex.Message;
+                    SelectionDetailText.Text = ReportUnexpectedError(
+                        ex,
+                        "Part selection could not be completed.",
+                        "SELECT PARTS");
                 }
             }
             finally
@@ -143,12 +162,15 @@ namespace SinglePartAutoFix.Wpf.Views
             {
                 var results = await Task.Run(BuildDryCheckResults);
                 ShowResults(results);
+                _logger.Write("WPF DRY CHECK", results, _teklaSession.GetModelName());
             }
             catch (Exception ex)
             {
                 if (IsCurrentModelAvailable())
                 {
-                    ShowError(ex.Message, "Dry Check Error");
+                    ShowError(
+                        ReportUnexpectedError(ex, "The dry check could not be completed.", "DRY CHECK"),
+                        "Dry Check Error");
                 }
             }
             finally
@@ -159,6 +181,7 @@ namespace SinglePartAutoFix.Wpf.Views
 
         private List<DrawingProcessResult> BuildDryCheckResults()
         {
+            _drawingChecker.Refresh();
             var results = _candidates
                 .Select(candidate => _drawingProcessor.Process(candidate, dryRun: true))
                 .ToList();
@@ -177,6 +200,14 @@ namespace SinglePartAutoFix.Wpf.Views
                 {
                     result.Standardization = savedStandardization;
                 }
+
+                DrawingVerificationResult savedVerification;
+                if (_verificationByPieceMark.TryGetValue(
+                    result.Candidate.PieceMark,
+                    out savedVerification))
+                {
+                    result.Verification = savedVerification;
+                }
             }
 
             return results;
@@ -192,6 +223,7 @@ namespace SinglePartAutoFix.Wpf.Views
             FailedCountText.Text = CountResults(DrawingProcessStatus.Failed).ToString();
 
             StatusFilterComboBox.SelectedIndex = 0;
+            DrawingStateFilterComboBox.SelectedIndex = 0;
             GridSearchTextBox.Text = string.Empty;
             ApplyFilters();
             UpdateActionButtons();
@@ -212,6 +244,11 @@ namespace SinglePartAutoFix.Wpf.Views
             ApplyFilters();
         }
 
+        private void DrawingStateFilter_Changed(object sender, SelectionChangedEventArgs e)
+        {
+            ApplyFilters();
+        }
+
         private void ApplyFilters()
         {
             if (CandidateDataGrid == null || StatusFilterComboBox == null || GridSearchTextBox == null)
@@ -226,6 +263,23 @@ namespace SinglePartAutoFix.Wpf.Views
             if (status != "All Status")
             {
                 visibleResults = visibleResults.Where(result => result.Status.ToString() == status);
+            }
+
+            var selectedDrawingState = DrawingStateFilterComboBox?.SelectedItem as ComboBoxItem;
+            string drawingState = selectedDrawingState?.Content?.ToString() ?? "All Drawings";
+            if (drawingState == "Up to date")
+            {
+                visibleResults = visibleResults.Where(result =>
+                    result.DrawingLookup?.Drawing?.UpToDateStatus == "DrawingIsUpToDate");
+            }
+            else if (drawingState == "Needs attention")
+            {
+                visibleResults = visibleResults.Where(NeedsDrawingAttention);
+            }
+            else if (drawingState == "Verified")
+            {
+                visibleResults = visibleResults.Where(result =>
+                    result.Standardization?.Status == DrawingStandardizationStatus.Verified);
             }
 
             string searchText = GridSearchTextBox.Text.Trim();
@@ -253,11 +307,143 @@ namespace SinglePartAutoFix.Wpf.Views
                 result.Candidate?.PartCount.ToString(),
                 result.Status.ToString(),
                 result.StandardizationDisplay,
+                result.DrawingStateDisplay,
+                result.DrawingScaleDisplay,
+                result.SuggestedAction,
                 result.Message
             };
 
             return values.Any(value =>
                 (value ?? string.Empty).IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        private static bool NeedsDrawingAttention(DrawingProcessResult result)
+        {
+            if (result?.DrawingLookup?.Status == DrawingLookupStatus.Duplicate)
+            {
+                return true;
+            }
+
+            var drawing = result?.DrawingLookup?.Drawing;
+            return drawing != null &&
+                   (drawing.UpToDateStatus != "DrawingIsUpToDate" ||
+                    drawing.IsLocked ||
+                    drawing.IsFrozen ||
+                    drawing.IsIssuedButModified);
+        }
+
+        private void CandidateDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateSelectedCandidateDetails();
+            UpdateActionButtons();
+        }
+
+        private void UpdateSelectedCandidateDetails()
+        {
+            var selected = CandidateDataGrid?.SelectedItem as DrawingProcessResult;
+            if (selected == null)
+            {
+                SelectedDetailTitleText.Text = "Select a candidate to view details";
+                SelectedDetailText.Text = "Drawing state, verification, and suggested actions appear here.";
+                return;
+            }
+
+            SelectedDetailTitleText.Text =
+                $"{selected.Candidate.PieceMarkDisplay} · {selected.Status} · {selected.DrawingStateDisplay}";
+
+            string verification = selected.Verification == null
+                ? string.Empty
+                : $" Verification: {selected.Verification.Message}";
+            SelectedDetailText.Text =
+                $"{selected.DetailDisplay}{verification} Reference: {selected.OperationId ?? "-"}.";
+        }
+
+        private void FocusInModel_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = CandidateDataGrid.SelectedItem as DrawingProcessResult;
+            if (selected == null || !IsCurrentModelAvailable())
+            {
+                return;
+            }
+
+            try
+            {
+                string message;
+                if (_navigationService.FocusInModel(selected.Candidate, out message))
+                {
+                    SelectedDetailText.Text = message;
+                }
+                else
+                {
+                    ShowInformation(message, "Focus in Model");
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowError(
+                    ReportUnexpectedError(
+                        ex,
+                        "Tekla could not focus the selected model parts.",
+                        "FOCUS IN MODEL"),
+                    "Focus in Model");
+            }
+        }
+
+        private void OpenDrawing_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = CandidateDataGrid.SelectedItem as DrawingProcessResult;
+            if (selected == null || !IsCurrentModelAvailable())
+            {
+                return;
+            }
+
+            try
+            {
+                string message;
+                if (_navigationService.OpenDrawing(selected.Candidate, out message))
+                {
+                    SelectedDetailText.Text = message;
+                }
+                else
+                {
+                    ShowInformation(message, "Open Drawing");
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowError(
+                    ReportUnexpectedError(
+                        ex,
+                        "Tekla could not open the selected drawing.",
+                        "OPEN DRAWING"),
+                    "Open Drawing");
+            }
+        }
+
+        private async void RefreshDrawings_Click(object sender, RoutedEventArgs e)
+        {
+            if (_candidates.Count == 0 || !IsCurrentModelAvailable())
+            {
+                return;
+            }
+
+            SetDryCheckBusy(true);
+            try
+            {
+                var results = await Task.Run(BuildDryCheckResults);
+                ShowResults(results);
+                _logger.Write("WPF REFRESH", results, _teklaSession.GetModelName());
+            }
+            catch (Exception ex)
+            {
+                ShowError(
+                    ReportUnexpectedError(ex, "Drawing information could not be refreshed.", "REFRESH"),
+                    "Refresh Error");
+            }
+            finally
+            {
+                SetDryCheckBusy(false);
+            }
         }
 
         private void SelectReadyDrawings_Click(object sender, RoutedEventArgs e)
@@ -281,7 +467,7 @@ namespace SinglePartAutoFix.Wpf.Views
             }
         }
 
-        private void CreateDrawings_Click(object sender, RoutedEventArgs e)
+        private async void CreateDrawings_Click(object sender, RoutedEventArgs e)
         {
             if (!IsCurrentModelAvailable())
             {
@@ -334,14 +520,19 @@ namespace SinglePartAutoFix.Wpf.Views
             }
 
             SetCreationBusy(true);
+            _batchCancellation = new CancellationTokenSource();
+            CancelBatchButton.Visibility = Visibility.Visible;
 
             try
             {
-                var creationResults = selectedDrawings
-                    .Select(item => _drawingProcessor.Process(item.Candidate, dryRun: false))
-                    .ToList();
+                var creationResults = await _batchRunner.RunAsync(
+                    selectedDrawings.Select(item => item.Candidate).ToList(),
+                    _batchCancellation.Token,
+                    UpdateBatchProgress,
+                    ValidateBatchContext);
 
                 SaveStandardizationResults(creationResults);
+                _logger.Write("WPF CONTROLLED BATCH", creationResults, _teklaSession.GetModelName());
                 RefreshResults();
                 ShowCreationSummary(creationResults);
             }
@@ -349,13 +540,65 @@ namespace SinglePartAutoFix.Wpf.Views
             {
                 if (IsCurrentModelAvailable())
                 {
-                    ShowError(ex.Message, "Drawing Creation Error");
+                    ShowError(
+                        ReportUnexpectedError(ex, "The drawing batch could not be completed.", "CREATE BATCH"),
+                        "Drawing Creation Error");
                 }
             }
             finally
             {
+                CancelBatchButton.Visibility = Visibility.Collapsed;
+                _batchCancellation.Dispose();
+                _batchCancellation = null;
                 SetCreationBusy(false);
             }
+        }
+
+        private string ValidateBatchContext()
+        {
+            try
+            {
+                if (!_isAuthenticated())
+                {
+                    return "The authenticated session is no longer valid.";
+                }
+
+                if (!_teklaSession.IsConnected())
+                {
+                    return "Tekla Structures is no longer connected.";
+                }
+
+                string currentPath = _teklaSession.GetModelPath() ?? string.Empty;
+                if (!string.Equals(_expectedModelPath, currentPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    return "The active Tekla model changed after the dry check.";
+                }
+
+                var standardValidation = ValidateDrawingStandard();
+                return standardValidation.IsValid ? string.Empty : standardValidation.Message;
+            }
+            catch
+            {
+                return "The Tekla preflight check could not be completed.";
+            }
+        }
+
+        private void UpdateBatchProgress(int completed, int total, string message)
+        {
+            SelectedDetailTitleText.Text = $"Batch progress — {completed}/{total}";
+            SelectedDetailText.Text = message;
+        }
+
+        private void CancelBatch_Click(object sender, RoutedEventArgs e)
+        {
+            if (_batchCancellation == null || _batchCancellation.IsCancellationRequested)
+            {
+                return;
+            }
+
+            _batchCancellation.Cancel();
+            CancelBatchButton.Content = "Cancelling...";
+            SelectedDetailText.Text = "The batch will stop after the current drawing operation finishes.";
         }
 
         private bool ConfirmDrawingCreation(IReadOnlyList<DrawingProcessResult> drawings)
@@ -387,6 +630,10 @@ namespace SinglePartAutoFix.Wpf.Views
                 }
 
                 _standardizationByPieceMark[result.Candidate.PieceMark] = result.Standardization;
+                if (result.Verification != null)
+                {
+                    _verificationByPieceMark[result.Candidate.PieceMark] = result.Verification;
+                }
             }
         }
 
@@ -404,12 +651,14 @@ namespace SinglePartAutoFix.Wpf.Views
             int existing = results.Count(result => result.Status == DrawingProcessStatus.Existing);
             int review = results.Count(result => result.Status == DrawingProcessStatus.NeedReview);
             int failed = results.Count(result => result.Status == DrawingProcessStatus.Failed);
+            int cancelled = results.Count(result => result.Status == DrawingProcessStatus.Cancelled);
 
             string details = string.Join(
                 Environment.NewLine,
-                results.Select(result => $"{result.Candidate.PieceMark} | {result.Status}"));
+                results.Select(result =>
+                    $"{result.Candidate?.PieceMarkDisplay ?? "Unknown"} | {result.Status} | {result.OperationId}"));
 
-            var icon = failed > 0 || review > 0
+            var icon = failed > 0 || review > 0 || cancelled > 0
                 ? MessageBoxImage.Warning
                 : MessageBoxImage.Information;
 
@@ -419,6 +668,7 @@ namespace SinglePartAutoFix.Wpf.Views
                 $"Existing    : {existing}\n" +
                 $"Need Review : {review}\n" +
                 $"Failed      : {failed}\n\n" +
+                $"Cancelled   : {cancelled}\n\n" +
                 $"Details:\n{details}",
                 "Drawing Creation Completed",
                 MessageBoxButton.OK,
@@ -473,23 +723,37 @@ namespace SinglePartAutoFix.Wpf.Views
                     : $"Connected — {modelName}";
                 TeklaStatusText.Foreground = new SolidColorBrush(Color.FromRgb(71, 85, 105));
                 TeklaStatusIndicator.Fill = (Brush)FindResource("PrimaryBrush");
+                UpdatePreflightStatus();
                 return;
             }
 
             TeklaStatusText.Text = "Tekla disconnected";
             TeklaStatusText.Foreground = new SolidColorBrush(Color.FromRgb(185, 28, 28));
             TeklaStatusIndicator.Fill = new SolidColorBrush(Color.FromRgb(220, 38, 38));
+            UpdatePreflightStatus();
         }
 
         private void UpdateStandardStatus()
         {
             var validation = ValidateDrawingStandard();
-            StandardizationStatusText.ToolTip = validation.Message;
+            var activeProfiles = _standardProfiles
+                .Where(profile => profile.IsEnabled)
+                .ToList();
+            string profileDetail = activeProfiles.Count == 1
+                ? $"Profile: {activeProfiles[0].Name} v{activeProfiles[0].Version}\n" +
+                  $"Attribute: {activeProfiles[0].DrawingAttributeName}\n" +
+                  $"Required file: {activeProfiles[0].RequiredAttributeFileName}\n"
+                : string.Empty;
+            string pathDetail = string.IsNullOrWhiteSpace(validation.ResolvedPath)
+                ? string.Empty
+                : $"\nResolved path: {validation.ResolvedPath}";
+            StandardizationStatusText.ToolTip =
+                $"{profileDetail}Validation: {validation.Status} — {validation.Message}{pathDetail}";
 
             switch (validation.Status)
             {
                 case DrawingStandardValidationStatus.Ready:
-                    StandardizationStatusText.Text = "Ready";
+                    StandardizationStatusText.Text = "Ready · Test Profile";
                     StandardizationStatusText.Foreground = (Brush)FindResource("PrimaryBrush");
                     break;
 
@@ -508,27 +772,92 @@ namespace SinglePartAutoFix.Wpf.Views
                     StandardizationStatusText.Foreground = new SolidColorBrush(Color.FromRgb(180, 83, 9));
                     break;
             }
+
+            UpdatePreflightStatus();
+        }
+
+        private void UpdatePreflightStatus()
+        {
+            if (PreflightStatusText == null)
+            {
+                return;
+            }
+
+            bool authenticated = false;
+            bool teklaConnected = false;
+            bool activeModel = false;
+            bool drawingApi = false;
+            bool standardReady = false;
+
+            try
+            {
+                authenticated = _isAuthenticated != null && _isAuthenticated();
+                teklaConnected = _teklaSession != null && _teklaSession.IsConnected();
+                activeModel = teklaConnected &&
+                              !string.IsNullOrWhiteSpace(_teklaSession.GetModelName()) &&
+                              string.Equals(
+                                  _expectedModelPath,
+                                  _teklaSession.GetModelPath() ?? string.Empty,
+                                  StringComparison.OrdinalIgnoreCase);
+                drawingApi = teklaConnected && _navigationService.IsDrawingApiConnected();
+                standardReady = ValidateDrawingStandard().IsValid;
+            }
+            catch
+            {
+                // Preflight is informational; the workflow gates provide the actionable error.
+            }
+
+            PreflightStatusText.Text =
+                $"Preflight: Authentication {ReadyLabel(authenticated)}  ·  " +
+                $"Tekla {ReadyLabel(teklaConnected)}  ·  " +
+                $"Active Model {ReadyLabel(activeModel)}  ·  " +
+                $"Drawing API {ReadyLabel(drawingApi)}  ·  " +
+                $"Drawing Standard {ReadyLabel(standardReady)}";
+
+            PreflightStatusText.Foreground = authenticated && teklaConnected && activeModel && drawingApi && standardReady
+                ? (Brush)FindResource("PrimaryBrush")
+                : new SolidColorBrush(Color.FromRgb(180, 83, 9));
+        }
+
+        private static string ReadyLabel(bool isReady)
+        {
+            return isReady ? "Ready" : "Check";
         }
 
         private DrawingStandardValidationResult ValidateDrawingStandard()
         {
-            var activeProfile = _standardProfileProvider.GetProfiles()
-                .FirstOrDefault(profile => profile.IsEnabled);
+            var activeProfiles = _standardProfiles
+                .Where(profile => profile.IsEnabled)
+                .ToList();
 
-            return activeProfile == null
-                ? DrawingStandardValidationResult.Create(
+            if (activeProfiles.Count == 0)
+            {
+                return DrawingStandardValidationResult.Create(
                     DrawingStandardValidationStatus.NotConfigured,
-                    "No enabled drawing standard profile is configured.")
-                : _standardValidator.Validate(activeProfile);
+                    "No enabled drawing standard profile is configured.");
+            }
+
+            if (activeProfiles.Count > 1)
+            {
+                return DrawingStandardValidationResult.Create(
+                    DrawingStandardValidationStatus.ConfigurationMissing,
+                    "More than one drawing standard profile is enabled. Enable exactly one profile.");
+            }
+
+            return _standardValidator.Validate(activeProfiles[0]);
         }
 
         private void ClearResults()
         {
             _results.Clear();
             _standardizationByPieceMark.Clear();
+            _verificationByPieceMark.Clear();
             CandidateDataGrid.ItemsSource = null;
             StatusFilterComboBox.SelectedIndex = 0;
+            DrawingStateFilterComboBox.SelectedIndex = 0;
             GridSearchTextBox.Text = string.Empty;
+            SelectedDetailTitleText.Text = "Select a candidate to view details";
+            SelectedDetailText.Text = "Drawing state, verification, and suggested actions appear here.";
             SetCountText("-");
             UpdateActionButtons();
         }
@@ -570,6 +899,10 @@ namespace SinglePartAutoFix.Wpf.Views
             _isBusy = isBusy;
             CreateDrawingsButton.Content = isBusy ? "Creating..." : "Create Drawings";
             Mouse.OverrideCursor = isBusy ? Cursors.Wait : null;
+            if (!isBusy)
+            {
+                CancelBatchButton.Content = "Cancel Batch";
+            }
             UpdateActionButtons();
         }
 
@@ -578,14 +911,20 @@ namespace SinglePartAutoFix.Wpf.Views
             bool hasCandidates = _candidates.Count > 0;
             bool hasReadyDrawings = _results.Any(
                 result => result.Status == DrawingProcessStatus.ReadyToCreate);
+            var selected = CandidateDataGrid?.SelectedItem as DrawingProcessResult;
 
             SelectPartsButton.IsEnabled = !_isBusy;
             DryRunButton.IsEnabled = !_isBusy && hasCandidates;
             StatusFilterComboBox.IsEnabled = !_isBusy;
+            DrawingStateFilterComboBox.IsEnabled = !_isBusy;
             GridSearchTextBox.IsEnabled = !_isBusy;
             BatchSizeComboBox.IsEnabled = !_isBusy;
             SelectBatchButton.IsEnabled = !_isBusy && hasReadyDrawings;
             CreateDrawingsButton.IsEnabled = !_isBusy && hasReadyDrawings;
+            RefreshDrawingsButton.IsEnabled = !_isBusy && hasCandidates;
+            FocusInModelButton.IsEnabled = !_isBusy && selected?.Candidate != null;
+            OpenDrawingButton.IsEnabled = !_isBusy &&
+                                          selected?.DrawingLookup?.Status == DrawingLookupStatus.Found;
         }
 
         private void Logout_Click(object sender, RoutedEventArgs e)
@@ -602,6 +941,26 @@ namespace SinglePartAutoFix.Wpf.Views
         private static void ShowError(string message, string title)
         {
             MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+
+        private string ReportUnexpectedError(
+            Exception exception,
+            string userMessage,
+            string processName)
+        {
+            string operationId = Guid.NewGuid().ToString("N").Substring(0, 8).ToUpperInvariant();
+            string modelName;
+            try
+            {
+                modelName = _teklaSession.GetModelName();
+            }
+            catch
+            {
+                modelName = "Unknown";
+            }
+
+            _logger.WriteError(processName, modelName, operationId, exception);
+            return $"{userMessage} Reference: {operationId}.";
         }
 
         private sealed class PartSelectionResult

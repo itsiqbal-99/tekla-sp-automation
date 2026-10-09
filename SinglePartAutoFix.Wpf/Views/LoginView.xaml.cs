@@ -20,11 +20,18 @@ namespace SinglePartAutoFix.Wpf.Views
     {
         private bool _syncingPassword;
 
-        public LoginView(string modelName, string demoUsername, string demoPassword)
+        public LoginView(
+            string modelName,
+            string demoUsername,
+            string demoPassword,
+            bool showDemoCredentials)
         {
             InitializeComponent();
             ModelNameText.Text = string.IsNullOrWhiteSpace(modelName) ? "Active model" : modelName;
             DemoCredentialsText.Text = $"Username: {demoUsername}   |   Password: {demoPassword}";
+            DemoCredentialsBorder.Visibility = showDemoCredentials
+                ? Visibility.Visible
+                : Visibility.Collapsed;
             Loaded += (sender, args) => UsernameTextBox.Focus();
         }
 

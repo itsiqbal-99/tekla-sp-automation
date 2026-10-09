@@ -20,7 +20,8 @@ namespace SinglePartAutoFix.Infrastructure.Logging
 
         public void Write(
             string processName,
-            IReadOnlyList<DrawingProcessResult> results)
+            IReadOnlyList<DrawingProcessResult> results,
+            string modelName = null)
         {
             if (results == null || results.Count == 0)
                 return;
@@ -40,19 +41,33 @@ namespace SinglePartAutoFix.Infrastructure.Logging
                 writer.WriteLine(
                     $"=== {processName} | {DateTime.Now:yyyy-MM-dd HH:mm:ss} ==="
                 );
+                if (!string.IsNullOrWhiteSpace(modelName))
+                {
+                    writer.WriteLine($"Model: {modelName}");
+                }
 
                 foreach (var result in results)
                 {
                     var candidate = result.Candidate;
 
                     writer.WriteLine(
-                        $"{candidate.PieceMark} | " +
-                        $"{candidate.Profile} | " +
-                        $"{candidate.MaterialType} | " +
-                        $"Qty: {candidate.PartCount} | " +
+                        $"Operation: {result.OperationId ?? "-"} | " +
+                        $"{candidate?.PieceMarkDisplay ?? "Unknown candidate"} | " +
+                        $"{candidate?.Profile ?? "-"} | " +
+                        $"{candidate?.MaterialType ?? "-"} | " +
+                        $"Qty: {candidate?.PartCount ?? 0} | " +
                         $"{result.Status} | " +
+                        $"{result.StandardizationDisplay} | " +
+                        $"{result.DrawingStateDisplay} | " +
+                        $"Tekla state enum: {result.DrawingLookup?.Drawing?.UpToDateStatus ?? "-"} | " +
+                        $"Duration: {result.DurationMilliseconds} ms | " +
                         $"{result.Message}"
                     );
+
+                    if (!string.IsNullOrWhiteSpace(result.TechnicalError))
+                    {
+                        writer.WriteLine($"Technical error [{result.OperationId}]: {result.TechnicalError}");
+                    }
                 }
 
                 writer.WriteLine();
@@ -81,6 +96,32 @@ namespace SinglePartAutoFix.Infrastructure.Logging
                 writer.WriteLine(
                     $"Failed        : {results.Count(x => x.Status == DrawingProcessStatus.Failed)}"
                 );
+
+                writer.WriteLine(
+                    $"Cancelled     : {results.Count(x => x.Status == DrawingProcessStatus.Cancelled)}"
+                );
+            }
+        }
+
+        public void WriteError(
+            string processName,
+            string modelName,
+            string operationId,
+            Exception exception)
+        {
+            Directory.CreateDirectory(_logDirectory);
+            string filePath = Path.Combine(
+                _logDirectory,
+                $"single_part_{DateTime.Now:yyyyMMdd}.log");
+
+            using (var writer = new StreamWriter(filePath, append: true))
+            {
+                writer.WriteLine();
+                writer.WriteLine(
+                    $"=== ERROR {processName} | {DateTime.Now:yyyy-MM-dd HH:mm:ss} | " +
+                    $"Operation: {operationId ?? "-"} ===");
+                writer.WriteLine($"Model: {modelName ?? "Unknown"}");
+                writer.WriteLine(exception?.ToString() ?? "No exception details were provided.");
             }
         }
     }
